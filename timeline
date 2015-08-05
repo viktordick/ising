@@ -1,0 +1,5 @@
+#!/usr/bin/bash
+double2text < $1 > .tl
+(
+echo "plot '.tl' u :1 w l t '$1'" 
+) | gnuplot -p

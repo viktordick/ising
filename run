@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+extent=$1
+count=$2
+shift; shift
+./compile $extent || exit
+for beta in $@; do 
+    echo "bin/ising_$extent $beta $count | (read line; echo \$(date +%T) \$line)"
+done | parallelize 4
