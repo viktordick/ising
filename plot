@@ -27,6 +27,7 @@ done
 # echo "rep 'result/016.txt' u 3:8:9 axes x1y1 w e t '016' lc 1 lt 1"
 
 # echo "rep 'result/064.txt' u 3:8:9 axes x1y2 w e t '064'" lc 3
-) > plot.gpi
-gplpdf plot.gpi > /dev/null
-rm plot.gpi
+) >tmp.gpi 
+gplpdf tmp.gpi > /dev/null
+rm tmp.gpi
+mv tmp.pdf plot.pdf

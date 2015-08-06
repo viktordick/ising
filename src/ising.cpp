@@ -7,6 +7,7 @@
 #include <sstream>
 #include <boost/filesystem.hpp>
 
+#include <omp.h>
 #include <math.h>
 #include "extent.h"
 
@@ -20,6 +21,35 @@ int dec(int x, int N=L) { //decrease index with periodic boundaries
 int inc(int x, int N=L){
     return (x==N-1)?0:(x+1);
 }
+
+static std::default_random_engine *pRND;
+#pragma omp threadprivate(pRND)
+
+class Random {
+    private:
+        static bool initialized;
+        static std::uniform_real_distribution<double> dst;
+        Random();
+    public:
+    static void init(std::default_random_engine::result_type seed) {
+        if (initialized)
+            return;
+#pragma omp parallel
+        {
+            pRND = new std::default_random_engine(seed+omp_get_thread_num());
+            pRND->discard(10);
+        }
+        initialized = true;
+    }
+    static double get() {
+        if (!initialized)
+            throw "forgot to call Random::init()";
+        return dst(*pRND);
+    }
+};
+
+bool Random::initialized = false;
+std::uniform_real_distribution<double> Random::dst{0,1};
 
 #if 0
 //use shortest unsigned integer type that has enough bits to hold LH
@@ -224,24 +254,22 @@ class Ising {
 
 struct Ising {
     char data[L][L];
-    std::default_random_engine rnd;
-    std::uniform_real_distribution<double> dst;
     double beta, e4beta, e8beta;
 
-    Ising(unsigned seed, double _beta):
-        rnd(seed) {
-            beta = _beta;
-            e4beta = exp(-4*beta);
-            e8beta = exp(-8*beta);
-        }
+    Ising(unsigned seed, double _beta) {
+        Random::init(seed);
+        beta = _beta;
+        e4beta = exp(-4*beta);
+        e8beta = exp(-8*beta);
+    }
     void init() {
-        std::bernoulli_distribution d;
         for (int x=0; x<L; x++)
             for (int y=0; y<L; y++)
-                data[x][y] = d(rnd)?1:-1;
+                data[x][y] = (Random::get()<0.5)?1:-1;
     }
     void sweep() {
         for (int eo=0; eo<2; eo++) {
+#pragma omp parallel for
             for (int x=0; x<L; x++) {
                 for (int y=(x+eo)%2; y<L; y+=2) {
                     char &cur = data[x][y];
@@ -254,7 +282,7 @@ struct Ising {
                     if (N <= 0)
                         cur = -cur;
                     else {
-                        double r = dst(rnd);
+                        double r = Random::get();
                         if ((N==2 && r<e4beta) || (N==4 && r<e8beta))
                             cur = -cur;
                     }

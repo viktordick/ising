@@ -17,8 +17,13 @@ except ImportError:
 
 env["ENV"]["TERM"] = os.environ["TERM"] #to get clang to display colored output
 env.Append(CCFLAGS=( ["-g","-O0"] if 'debug' in ARGUMENTS else ["-O3"]))
-env.Append(CCFLAGS=["-march=native", "-Wall", "-std=c++11"])
-env.Append(LIBPATH=["/usr/lib/x86_64-linux-gnu"], LIBS=["boost_filesystem","boost_system"])
+env.Append(
+    CCFLAGS=["-march=native", "-Wall", "-std=c++11", '-fopenmp'],
+    CPPPATH=["/usr/lib/gcc/x86_64-unknown-linux-gnu/5.2.0/include"],
+    LIBPATH=["/usr/lib/x86_64-linux-gnu"], 
+    LIBS=["boost_filesystem","boost_system"],
+    LINKFLAGS=["-fopenmp"]
+    )
 
 COMPILER = ARGUMENTS.get("cxx", "gcc") #gcc is default
 
