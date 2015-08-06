@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 (
 echo "set ytics nomirror"
 echo "set y2tics"

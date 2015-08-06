@@ -18,7 +18,7 @@ except ImportError:
 env["ENV"]["TERM"] = os.environ["TERM"] #to get clang to display colored output
 env.Append(CCFLAGS=( ["-g","-O0"] if 'debug' in ARGUMENTS else ["-O3"]))
 env.Append(CCFLAGS=["-march=native", "-Wall", "-std=c++11"])
-env.Append(LINKFLAGS=["-lboost_filesystem", "-lboost_system"])
+env.Append(LIBPATH=["/usr/lib/x86_64-linux-gnu"], LIBS=["boost_filesystem","boost_system"])
 
 COMPILER = ARGUMENTS.get("cxx", "gcc") #gcc is default
 
@@ -62,3 +62,4 @@ if os.path.isdir('data'):
     for L in os.listdir('data'):
         results.append(Command("result/"+L+".txt", Glob("data/"+L+"/*")+["bin/analyse-ising"], "bin/analyse-ising "+L+" 5000"))
     env.Command("plot.pdf", [results, "./plot"], "./plot")
+
