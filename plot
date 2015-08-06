@@ -3,12 +3,14 @@
 echo "set ytics nomirror"
 echo "set y2tics"
 echo "set key at graph 0.05,0.95 l" 
-echo "set xr [0.395:0.455]"
+echo "set xr [0.419:0.451]"
 # echo "set xr [0.295:0.455]"
 # echo "set xr [0:1]"
 echo "set yr [0:1]"
 # echo "unset link y"
 echo "p 1/0 t ''"
+echo 'set pointsize 0.5'
+echo "set label '\$\\chi\$' at graph 0.98,0.95 r"
 lc=1
 lt=1
 for i in $(ls result)

@@ -1,5 +1,19 @@
 #!/usr/bin/bash
-double2text < $1 > .tl
-(
-echo "plot '.tl' u :1 w l t '$1'" 
-) | gnuplot -p
+if [ $# -lt 1 ]; then
+    echo "Missing filename."
+    exit
+fi
+
+function plot {
+    double2text < $1 | tail -n +2 > .tl
+    echo "plot '.tl' u :1 w l t ''" > timeline.gpi 
+    gplpdf timeline.gpi
+    rm timeline.gpi
+}
+test -s $1 && plot $1
+while true; do
+    while [[ ( $1 -ot timeline.pdf ) || ! -s $1 ]]; do
+        sleep 1 || exit
+    done
+    plot $1
+done
