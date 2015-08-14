@@ -4,5 +4,5 @@ count=$2
 shift; shift
 ./compile $extent || exit
 for beta in $@; do 
-    bin/ising_$extent $beta $count
-done
+    echo "bin/ising_$extent $beta $count | (read line; echo \$(date +%H) \$line)"
+done | parallelize 4

@@ -5,7 +5,7 @@ objdir = '.obj'
 bindir = 'bin'
 CacheDir('.cache')
 
-omp = True
+omp = False
 
 env = Environment()
 env.VariantDir('.obj', 'src', duplicate=0)
@@ -68,6 +68,6 @@ if os.path.isdir('data'):
     env["ENV"]["PATH"]+= ":~/bin"
     results = []
     for L in os.listdir('data'):
-        results.append(Command("result/"+L+".txt", Glob("data/"+L+"/*")+["bin/analyse-ising"], "bin/analyse-ising "+L+" 5000"))
-    env.Command("plot.pdf", [results, "./plot"], "./plot")
+        results.append(Command("result/"+L+".txt", Glob("data/"+L+"/*")+["bin/analyse-ising"], "bin/analyse-ising "+L+" 5000 40"))
+    env.Command(["M.pdf", 'chi.pdf'], [results, "./plot"], "./plot")
 

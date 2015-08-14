@@ -2,6 +2,6 @@
 
 while true
 do
-    scons -s plot.pdf
+    scons -s M.pdf chi.pdf 
     sleep 1 || break
 done

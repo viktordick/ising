@@ -7,7 +7,10 @@
 #include <sstream>
 #include <boost/filesystem.hpp>
 
+#ifdef _OPENMP
 #include <omp.h>
+#endif
+
 #include <math.h>
 #include "extent.h"
 
@@ -21,7 +24,7 @@ int inc(int x, int N=L){
     return (x==N-1)?0:(x+1);
 }
 
-static std::default_random_engine *pRND;
+static std::mt19937_64 *pRND;
 #ifdef _OPENMP
 #pragma omp threadprivate(pRND)
 #endif
@@ -29,30 +32,31 @@ static std::default_random_engine *pRND;
 class Random {
     private:
         static bool initialized;
-        static std::uniform_real_distribution<double> dst;
+//         static std::uniform_real_distribution<double> dst;
         Random();
     public:
-    static void init(std::default_random_engine::result_type seed) {
+    static void init(std::mt19937_64::result_type seed) {
         if (initialized)
             return;
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
         {
-            pRND = new std::default_random_engine(seed+omp_get_thread_num());
+#ifdef _OPENMP
+            seed += omp_get_thread_num();
+#endif
+            pRND = new std::mt19937_64(seed);
             pRND->discard(10);
         }
         initialized = true;
     }
     static double get() {
-        if (!initialized)
-            throw "forgot to call Random::init()";
-        return dst(*pRND);
+        return (*pRND)()/(double(std::mt19937_64::max())+1);
     }
 };
 
 bool Random::initialized = false;
-std::uniform_real_distribution<double> Random::dst{0,1};
+// std::uniform_real_distribution<double> Random::dst{0,1};
 
 struct Ising {
     char data[L][L];
