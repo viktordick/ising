@@ -1,6 +1,0 @@
-#!/bin/bash
-for L in $@; do
-    echo "const unsigned L = $L;" > src/extent.h
-    scons bin/ising && mv bin/ising bin/ising_$L
-done
-

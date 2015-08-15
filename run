@@ -1,8 +1,14 @@
 #!/bin/bash
-extent=$1
-count=$2
-shift; shift
-./compile $extent || exit
-for beta in $@; do 
-    echo "bin/ising_$extent $beta $count | (read line; echo \$(date +%H) \$line)"
+if [ $# -lt 5 ]; then
+    echo "usage: $0 L betamin betamax bits Nmeas"
+    exit
+fi
+
+./bitrange $2 $3 $4 | sort > .bits
+echo $1 > extent
+scons -j8 bin || exit
+
+for beta in $(cat .bits | mycut 1 )
+do
+    echo "bin/ising-$1-$beta $5 | (read line; echo \$(date +%T) \$line)"
 done | parallelize 4

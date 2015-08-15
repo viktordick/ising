@@ -1,0 +1,29 @@
+#!/usr/bin/python
+
+from sys import argv
+from math import log
+
+bits = argv[1]
+
+value = 0
+for bit in reversed(bits):
+    if bit == '1':
+        value += 1
+    value /= 2
+print("// p = {}".format(value))
+print("const double beta = {};".format(-0.25*log(value)))
+
+print("typedef std::mt19937_64 mt;")
+print("auto random_bits(mt &rnd) {")
+print("    auto result = rnd();")
+
+init = False
+for bit in reversed(bits):
+    if not init:
+        if bit == '1':
+            init = True
+        continue
+    print("    result {}= rnd();".format('|' if bit=='0' else '&'))
+
+print("    return result;")
+print("}")

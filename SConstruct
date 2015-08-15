@@ -19,9 +19,9 @@ except ImportError:
 
 env["ENV"]["TERM"] = os.environ["TERM"] #to get clang to display colored output
 env.Append(CCFLAGS=( ["-g","-O0"] if 'debug' in ARGUMENTS else ["-O3"]))
+cpppath=["/usr/lib/gcc/x86_64-unknown-linux-gnu/5.2.0/include"]
 env.Append(
-    CCFLAGS=["-march=native", "-Wall", "-std=c++11"],
-    CPPPATH=["/usr/lib/gcc/x86_64-unknown-linux-gnu/5.2.0/include"],
+    CCFLAGS=["-march=native", "-Wall", "-std=c++14"],
     LIBPATH=["/usr/lib/x86_64-linux-gnu"], 
     LIBS=["boost_filesystem","boost_system"],
     )
@@ -60,9 +60,22 @@ else:
     print("cxx argument not recognized.")
     Exit()
 
+extent = int(open('extent').read())
+with open("src/extent.h", "w") as f:
+    f.write("const unsigned L = {};\n".format(extent))
 
-for s in env.Glob(objdir+"/*.cpp", strings=True):
-    env.Program(bindir+s[len(objdir):-4], s)
+for line in open('.bits').readlines():
+    (beta,bits) = line.split()
+    Command(".h/{}/random.h".format(bits), "random", "./random {} > $TARGET".format(bits))
+    o = env.Object(
+        "{}/ising_{}_{}.o".format(objdir,extent,bits), 
+        objdir+'/ising.cpp', 
+        CPPPATH=cpppath+['.h/{}'.format(bits)])
+    env.Program("{}/ising-{}-{}".format(bindir,extent,beta), o)
+
+env.Program(bindir+"/analyse-ising", objdir+"/analyse-ising.cpp")
+# for s in env.Glob(objdir+"/*.cpp", strings=True):
+#     env.Program(bindir+s[len(objdir):-4], s)
 
 if os.path.isdir('data'):
     env["ENV"]["PATH"]+= ":~/bin"
