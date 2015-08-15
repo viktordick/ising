@@ -5,8 +5,6 @@ objdir = '.obj'
 bindir = 'bin'
 CacheDir('.cache')
 
-omp = False
-
 env = Environment()
 env.VariantDir('.obj', 'src', duplicate=0)
 
@@ -25,8 +23,6 @@ env.Append(
     LIBPATH=["/usr/lib/x86_64-linux-gnu"], 
     LIBS=["boost_filesystem","boost_system"],
     )
-if omp:
-    env.Append(CCFLAGS=['-fopenmp'], LINKFLAGS=['-fopenmp'])
 
 COMPILER = ARGUMENTS.get("cxx", "gcc") #gcc is default
 
@@ -81,6 +77,6 @@ if os.path.isdir('data'):
     env["ENV"]["PATH"]+= ":~/bin"
     results = []
     for L in os.listdir('data'):
-        results.append(Command("result/"+L+".txt", Glob("data/"+L+"/*")+["bin/analyse-ising"], "bin/analyse-ising "+L+" 5000 40"))
+        results.append(Command("result/"+L+".txt", Glob("data/"+L+"/*")+["bin/analyse-ising"], "bin/analyse-ising "+L+" 8000 40"))
     env.Command(["M.pdf", 'chi.pdf'], [results, "./plot"], "./plot")
 

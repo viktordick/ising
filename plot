@@ -1,7 +1,7 @@
 #!/bin/bash
 function plot {
 (
-echo "set xr [0.435:0.445]"
+echo "set xr [0.4:0.5]"
 # echo "set xr [0:1]"
 if [[ $1 == M ]]; then
     echo "set key at graph 0.92,0.5 r" 

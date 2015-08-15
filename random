@@ -13,9 +13,8 @@ for bit in reversed(bits):
 print("// p = {}".format(value))
 print("const double beta = {};".format(-0.25*log(value)))
 
-print("typedef std::mt19937_64 mt;")
-print("auto random_bits(mt &rnd) {")
-print("    auto result = rnd();")
+print("inline Random::result_type Random::e4beta() {")
+print("    auto result = r();")
 
 init = False
 for bit in reversed(bits):
@@ -23,7 +22,7 @@ for bit in reversed(bits):
         if bit == '1':
             init = True
         continue
-    print("    result {}= rnd();".format('|' if bit=='0' else '&'))
+    print("    result {}= r();".format('|' if bit=='0' else '&'))
 
 print("    return result;")
 print("}")
