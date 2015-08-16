@@ -134,7 +134,7 @@ void analyse_beta(std::ofstream &out, std::string filename, int blocksize, int e
 
     // magnetization values
     Vector mag;
-    double beta;
+    float beta;
     f.read((char*)&beta,sizeof(beta));
 
     // check for file open error
@@ -144,9 +144,8 @@ void analyse_beta(std::ofstream &out, std::string filename, int blocksize, int e
     }
     int v_count = 0; //number of read values
     while (true) {
-        double value;
+        float value;
         f.read((char*)&value, sizeof(value));
-        value = fabs(value);
         if (f.eof())
             break;
         v_count++;
@@ -196,8 +195,8 @@ int main(int argc, char** argv)
         std::cerr << "# Number of thermalisation steps should be >0, <100000, is " << therm << std::endl;
         return -1;
     }
-    if ((blocksize<4)||(blocksize>100)) {
-        std::cerr << "# JK-blocksize shoud be >4, <100, is " <<  blocksize<< std::endl;
+    if (blocksize<1) {
+        std::cerr << "# JK-blocksize shoud be > 0, is " <<  blocksize<< std::endl;
         return -1;
     }
 

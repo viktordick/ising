@@ -5,12 +5,17 @@ if [ $# -lt 1 ]; then
 fi
 
 function plot {
-    double2text < $1 | tail -n +2 > .tl
-    echo "plot '.tl' u :1 w l t ''" > timeline.gpi 
-    gplpdf timeline.gpi
+    float2text < $1 | tail -n +2 > .tl
+    ( 
+    echo "set yr [0:1]"
+    echo "plot '.tl' u :1 w l t ''" 
+    ) > timeline.gpi 
+    gplpdf timeline.gpi > /dev/null
+    cat .tl | wc -l
     rm timeline.gpi
 }
 test -s $1 && plot $1
+zathura timeline.pdf &
 while true; do
     while [[ ( $1 -ot timeline.pdf ) || ! -s $1 ]]; do
         sleep 1 || exit

@@ -6,11 +6,20 @@
 #include <vector>
 #include <sstream>
 #include <boost/filesystem.hpp>
+
 #include <math.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 #include "extent.h"
 
+off_t getFilesize(const char *path){
+    struct stat fStat;
+    if (!stat(path, &fStat)) 
+        return fStat.st_size;
+    else
+        return 0;
+};
 namespace fs = boost::filesystem;
 
 int dec(int x, int N=L) { //decrease index with periodic boundaries
@@ -80,31 +89,41 @@ int main(int argc, char** argv)
     Ising ising(seed);
     std::ofstream::openmode m;
     if (ising.load()) {
-        std::cout << "# Resuming "; 
+        std::cout << "# Resume "; 
         m = std::ofstream::app;
     } else {
-        std::cout << "# Initialized ";
+        std::cout << "#   Init ";
         m = std::ofstream::trunc;
-        ising.randomize();
+        if (beta < 0.44)
+            ising.randomize();
     }
-    std::cout << "ising with L=" << extent << ", beta=" << std::fixed << beta
-        << ", Nmeas=" << nmeas << std::endl;
+    std::cout << "L=" << extent << ", beta=" << std::fixed << beta
+        << ", Nmeas=" << nmeas ;
 
     std::stringstream out_file_name; 
     out_file_name << "data/" << std::setfill('0') << std::setw(3) << extent;
     fs::create_directories(out_file_name.str());
     out_file_name << "/" << std::fixed << std::setprecision(10) << beta;
+    if (m == std::ofstream::app) {
+        nmeas -= getFilesize(out_file_name.str().c_str())/sizeof(float)-1;
+        if (nmeas < 0)
+            nmeas = 0;
+        std::cout << " (" << nmeas << " remaining)";
+    }
+    std::cout << std::endl;
+
     std::ofstream outfile(out_file_name.str().c_str(), m);
     if (outfile.fail()) {
         std::cerr << "Output file could not be opened. Aborting." << std::endl;
         return -1;
     }
+    float b = beta;
     if (m == std::ofstream::trunc)
-        write(outfile, beta);
+        write(outfile, b);
     for (int i=0; keepRunning && i<nmeas; i++) {
         for (int j=0; j<10; j++)
             ising.sweep();
-        double M = ising.magnetization();
+        float M = ising.magnetization();
         write(outfile,M);
     }
     ising.save();

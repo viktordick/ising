@@ -19,7 +19,7 @@ env["ENV"]["TERM"] = os.environ["TERM"] #to get clang to display colored output
 env.Append(CCFLAGS=( ["-g","-O0"] if 'debug' in ARGUMENTS else ["-O3"]))
 cpppath=["/usr/lib/gcc/x86_64-unknown-linux-gnu/5.2.0/include"]
 env.Append(
-    CCFLAGS=["-march=native", "-Wall", "-std=c++14"],
+    CCFLAGS=["-march=native", "-Wall", "-std=c++11"],
     LIBPATH=["/usr/lib/x86_64-linux-gnu"], 
     LIBS=["boost_filesystem","boost_system"],
     )
@@ -77,6 +77,6 @@ if os.path.isdir('data'):
     env["ENV"]["PATH"]+= ":~/bin"
     results = []
     for L in os.listdir('data'):
-        results.append(Command("result/"+L+".txt", Glob("data/"+L+"/*")+["bin/analyse-ising"], "bin/analyse-ising "+L+" 8000 40"))
+        results.append(Command("result/"+L+".txt", Glob("data/"+L+"/*")+["bin/analyse-ising"], "bin/analyse-ising "+L+" 10000 1000"))
     env.Command(["M.pdf", 'chi.pdf'], [results, "./plot"], "./plot")
 

@@ -51,12 +51,12 @@ class Ising {
                 }
             }
         }
-        double magnetization() {
+        float magnetization() {
             int result = 0;
             for (int eo=0; eo<2; eo++)
                 for (int x=0; x<L; x++)
                     result += dat[eo][x].count();
-            return fabs(double(result*2)/(L*L)-1);
+            return fabs(float(result*2)/(L*L)-1);
         }
         void save() const {
             std::stringstream fname;
