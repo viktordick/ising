@@ -25,8 +25,10 @@ do
     extent=${i%.*}
     if [[ $1 == M ]]; then
         echo "rep 'result/$i' u 3:6:7 w e t '$extent' lc $lc lt $lt"
+        echo "rep '' u 3:6 smooth csplines t '' lc $lc dashtype (5,10)"
     elif [[ $1 == chi ]]; then
         echo "rep 'result/$i' u 3:(\$8*\$2**$pow):(\$9*\$2**$pow) w e t '$extent' lc $lc lt $lt"
+        echo "rep '' u 3:(\$8*\$2**$pow) smooth csplines t '' lc $lc dashtype (5,10) "
 #         echo "set yr [0:*]"
     fi
     let lc++

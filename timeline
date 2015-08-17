@@ -11,6 +11,7 @@ function plot {
     echo "plot '.tl' u :1 w l t ''" 
     ) > timeline.gpi 
     gplpdf timeline.gpi > /dev/null
+    echo -n $(date +%T) ' '
     cat .tl | wc -l
     rm timeline.gpi
 }
