@@ -5,7 +5,6 @@
 #include <chrono>
 #include <vector>
 #include <sstream>
-#include <boost/filesystem.hpp>
 
 #include <math.h>
 #include <signal.h>
@@ -20,7 +19,6 @@ off_t getFilesize(const char *path){
     else
         return 0;
 };
-namespace fs = boost::filesystem;
 
 int dec(int x, int N=L) { //decrease index with periodic boundaries
     return (x==0)?(N-1):(x-1);
@@ -101,8 +99,9 @@ int main(int argc, char** argv)
         << ", Nmeas=" << nmeas ;
 
     std::stringstream out_file_name; 
+    mkdir("data", 0775);
     out_file_name << "data/" << std::setfill('0') << std::setw(3) << extent;
-    fs::create_directories(out_file_name.str());
+    mkdir(out_file_name.str().c_str(), 0775);
     out_file_name << "/" << std::fixed << std::setprecision(10) << beta;
     if (m == std::ofstream::app) {
         nmeas -= getFilesize(out_file_name.str().c_str())/sizeof(float)-1;

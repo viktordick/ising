@@ -5,14 +5,15 @@ if [ $# -lt 1 ]; then
 fi
 
 function plot {
-    float2text < $1 | tail -n +2 > .tl
     ( 
     echo "set yr [0:1]"
-    echo "plot '.tl' u :1 w l t ''" 
+    echo "plot '$1' binary format='%float' using :1 w l t ''"
     ) > timeline.gpi 
     gplpdf timeline.gpi > /dev/null
-    echo -n $(date +%T) ' '
-    cat .tl | wc -l
+    size=$(cat $1 | wc -c)
+    let size/=4
+    let size--
+    echo $(date +%T) $size
     rm timeline.gpi
 }
 test -s $1 && plot $1

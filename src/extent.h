@@ -1,1 +1,1 @@
-const unsigned L = 256;
+const unsigned L = 128;

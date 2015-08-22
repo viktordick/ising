@@ -11,26 +11,23 @@ env.VariantDir('.obj', 'src', duplicate=0)
 
 try:
     from colorizer import colorizer
-    colorizer().colorize(env)
+#     colorizer().colorize(env)
 except ImportError:
     pass
 
 env["ENV"]["TERM"] = os.environ["TERM"] #to get clang to display colored output
-env.Append(CCFLAGS=( ["-g","-O0"] if 'debug' in ARGUMENTS else ["-O3"]))
-cpppath=["/usr/lib/gcc/x86_64-unknown-linux-gnu/5.2.0/include"]
-env.Append(
-    CCFLAGS=["-march=native", "-Wall", "-std=c++11"],
-    LIBPATH=["/usr/lib/x86_64-linux-gnu"], 
-    LIBS=["boost_filesystem","boost_system"],
-    )
+env.Append(CCFLAGS=Split("""
+    -march=native
+    -Wall
+    -std=c++11
+    -Wno-sign-compare
+    """) + (["-g","-O0"] if 'debug' in ARGUMENTS else ["-O3"]))
+
 
 COMPILER = ARGUMENTS.get("cxx", "gcc") #gcc is default
 
 if COMPILER in ["llvm", "clang"]:
     env.Replace(CXX="clang++")
-    env.Append(CCFLAGS=Split("""
-    -Wno-sign-compare
-    """))
 elif COMPILER == "gcc":
     env.Append(CCFLAGS=Split("""
     -fcx-fortran-rules
@@ -50,7 +47,6 @@ elif COMPILER == "gcc":
     -fgcse-las
     -fgcse-sm
     -fprefetch-loop-arrays
-    -Wno-sign-compare
     """))
 else:
     print("cxx argument not recognized.")
@@ -66,10 +62,16 @@ for line in open('.bits').readlines():
     o = env.Object(
         "{}/ising_{}_{}.o".format(objdir,extent,bits), 
         objdir+'/ising.cpp', 
-        CPPPATH=cpppath+['.h/{}'.format(bits)])
+        CPPPATH='.h/{}'.format(bits))
     env.Program("{}/ising-{}-{}".format(bindir,extent,beta), o)
 
-env.Program(bindir+"/analyse-ising", objdir+"/analyse-ising.cpp")
+env.Program(
+    bindir+"/analyse-ising", 
+    objdir+"/analyse-ising.cpp",
+    CPPPATH="/usr/lib/gcc/x86_64-unknown-linux-gnu/5.2.0/include",
+    LIBPATH=["/usr/lib/x86_64-linux-gnu"], 
+    LIBS=["boost_filesystem","boost_system"]
+    )
 # for s in env.Glob(objdir+"/*.cpp", strings=True):
 #     env.Program(bindir+s[len(objdir):-4], s)
 
