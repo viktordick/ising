@@ -79,6 +79,6 @@ if os.path.isdir('data'):
     env["ENV"]["PATH"]+= ":~/bin"
     results = []
     for L in os.listdir('data'):
-        results.append(Command("result/"+L+".txt", Glob("data/"+L+"/*")+["bin/analyse-ising"], "bin/analyse-ising "+L+" 10000 1000"))
+        results.append(Command("result/"+L+".txt", Glob("data/"+L+"/*")+["bin/analyse-ising"], "bin/analyse-ising "+L+" 1000 100"))
     env.Command(["M.pdf", 'chi.pdf'], [results, "./plot"], "./plot")
 

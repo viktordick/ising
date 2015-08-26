@@ -3,11 +3,13 @@ pow=-1.75
 function plot {
 (
 echo "set grid"
-echo "set xr [0.438:0.442]"
-echo "set xtics 0.0005"
+echo "set xr [0.37:0.45]"
+# echo "set xr [0.438:0.442]"
+# echo "set xtics 0.0005"
 # echo "set xr [0.17:0.174]"
 if [[ $1 == M ]]; then
-    echo "set key at graph 0.92,0.5 r" 
+#     echo "set key at graph 0.92,0.5 r" 
+    echo "set key bottom right"
     echo "set yr [0:1]"
     echo "set label '\$M\$' at graph 0.01,0.96 l"
 elif [[ $1 == chi ]]; then
