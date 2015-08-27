@@ -3,10 +3,9 @@ pow=-1.75
 function plot {
 (
 echo "set grid"
-echo "set xr [0.37:0.45]"
-# echo "set xr [0.438:0.442]"
+# echo "set xr [0.42:0.46]"
+echo "set xr [0:1]"
 # echo "set xtics 0.0005"
-# echo "set xr [0.17:0.174]"
 if [[ $1 == M ]]; then
 #     echo "set key at graph 0.92,0.5 r" 
     echo "set key bottom right"
@@ -26,13 +25,12 @@ lt=1
 # for i in 1024.txt 
 for i in $(ls -v result)
 do
-    test "$(cat result/$i | wc -l )" -gt 2 || continue
-    extent=${i%.*}
+    test "$(ls result/$i | wc -l )" -gt 2 || continue
     if [[ $1 == M ]]; then
-        echo "rep 'result/$i' u (f(\$3)):6:7 w e t '$extent' lc $lc lt $lt"
+        echo "rep '< cat result/$i/*' u (f(\$3)):6:7 w e t '$i' lc $lc lt $lt"
         echo "rep '' u (f(\$3)):6 smooth csplines t '' lc $lc dashtype (5,10)"
     elif [[ $1 == chi ]]; then
-        echo "rep 'result/$i' u (f(\$3)):(\$8*\$2**$pow):(\$9*\$2**$pow) w e t '$extent' lc $lc lt $lt"
+        echo "rep '< cat result/$i/*' u (f(\$3)):(\$8*\$2**$pow):(\$9*\$2**$pow) w e t '$i' lc $lc lt $lt"
         echo "rep '' u (f(\$3)):(\$8*\$2**$pow) smooth csplines t '' lc $lc dashtype (5,10) "
 #         echo "set yr [0:*]"
     fi

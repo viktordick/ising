@@ -11,7 +11,7 @@ env.VariantDir('.obj', 'src', duplicate=0)
 
 try:
     from colorizer import colorizer
-#     colorizer().colorize(env)
+    colorizer().colorize(env)
 except ImportError:
     pass
 
@@ -60,25 +60,24 @@ for line in open('.bits').readlines():
     (beta,bits) = line.split()
     Command(".h/{}/random.h".format(bits), "random", "./random {} > $TARGET".format(bits))
     o = env.Object(
-        "{}/ising_{}_{}.o".format(objdir,extent,bits), 
+        "{}/ising/{}_{}.o".format(objdir,extent,bits), 
         objdir+'/ising.cpp', 
         CPPPATH='.h/{}'.format(bits))
-    env.Program("{}/ising-{}-{}".format(bindir,extent,beta), o)
+    env.Program("{}/ising/{}/{}".format(bindir,extent,beta), o)
 
 env.Program(
-    bindir+"/analyse-ising", 
-    objdir+"/analyse-ising.cpp",
+    bindir+"/analyze", 
+    objdir+"/analyze.cpp",
     CPPPATH="/usr/lib/gcc/x86_64-unknown-linux-gnu/5.2.0/include",
     LIBPATH=["/usr/lib/x86_64-linux-gnu"], 
     LIBS=["boost_filesystem","boost_system"]
     )
-# for s in env.Glob(objdir+"/*.cpp", strings=True):
-#     env.Program(bindir+s[len(objdir):-4], s)
+results = []
+for datafile in Glob('data/*/*', strings=True):
+    result = 'result'+datafile[4:]
+    Command(result, [datafile, 'bin/analyze'], 'bin/analyze 100 1000 $SOURCE > $TARGET')
+    results.append(result)
 
-if os.path.isdir('data'):
-    env["ENV"]["PATH"]+= ":~/bin"
-    results = []
-    for L in os.listdir('data'):
-        results.append(Command("result/"+L+".txt", Glob("data/"+L+"/*")+["bin/analyse-ising"], "bin/analyse-ising "+L+" 1000 100"))
-    env.Command(["M.pdf", 'chi.pdf'], [results, "./plot"], "./plot")
+env["ENV"]["PATH"]+= ":~/bin"
+env.Command(["M.pdf", 'chi.pdf'], [results, "./plot"], "./plot")
 

@@ -10,5 +10,5 @@ scons -j8 bin || exit
 
 for beta in $(cat .bits | mycut 1 )
 do
-    echo bin/ising-$1-$beta $5 
+    echo bin/ising/$1/$beta $5 
 done | parallelize 4

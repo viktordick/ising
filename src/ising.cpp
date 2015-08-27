@@ -12,6 +12,8 @@
 
 #include "extent.h"
 
+typedef float floatT;
+
 off_t getFilesize(const char *path){
     struct stat fStat;
     if (!stat(path, &fStat)) 
@@ -83,9 +85,18 @@ int main(int argc, char** argv)
     std::cout << std::setw(2) << tm.tm_hour 
         << ':' << std::setw(2) << tm.tm_min 
         << ':' << std::setw(2) << tm.tm_sec << ' ';
+
     const unsigned seed = now.time_since_epoch().count();
     Ising ising(seed);
     std::ofstream::openmode m;
+
+    std::stringstream out_file_name; 
+    mkdir("data", 0775);
+    out_file_name << "data/" << std::setfill('0') << std::setw(3) << extent;
+    mkdir(out_file_name.str().c_str(), 0775);
+    out_file_name << "/" << std::fixed << std::setprecision(10) << beta;
+    auto size = getFilesize(out_file_name.str().c_str())/sizeof(floatT);
+
     if (ising.load()) {
         std::cout << "# Resume "; 
         m = std::ofstream::app;
@@ -95,20 +106,13 @@ int main(int argc, char** argv)
         if (beta < 0.44)
             ising.randomize();
     }
-    std::cout << "L=" << extent << ", beta=" << std::fixed << beta
-        << ", Nmeas=" << nmeas ;
+    std::cout << "L=" << extent << ", beta=" << std::fixed << beta << ", Nmeas=";
 
-    std::stringstream out_file_name; 
-    mkdir("data", 0775);
-    out_file_name << "data/" << std::setfill('0') << std::setw(3) << extent;
-    mkdir(out_file_name.str().c_str(), 0775);
-    out_file_name << "/" << std::fixed << std::setprecision(10) << beta;
     if (m == std::ofstream::app) {
-        nmeas -= getFilesize(out_file_name.str().c_str())/sizeof(float)-1;
-        if (nmeas < 0)
-            nmeas = 0;
-        std::cout << " (" << nmeas << " remaining)";
-    }
+        std::cout << nmeas-size << '/' << nmeas;
+        nmeas -= size;
+    } else
+        std::cout << nmeas;
     std::cout << std::endl;
 
     std::ofstream outfile(out_file_name.str().c_str(), m);
@@ -116,13 +120,10 @@ int main(int argc, char** argv)
         std::cerr << "Output file could not be opened. Aborting." << std::endl;
         return -1;
     }
-    float b = beta;
-    if (m == std::ofstream::trunc)
-        write(outfile, b);
     for (int i=0; keepRunning && i<nmeas; i++) {
         for (int j=0; j<10; j++)
             ising.sweep();
-        float M = ising.magnetization();
+        floatT M = ising.magnetization();
         write(outfile,M);
     }
     ising.save();
