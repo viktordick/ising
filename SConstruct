@@ -54,8 +54,7 @@ else:
 
 if os.path.exists('extent') and os.path.exists('.bits'):
     extent = int(open('extent').read())
-    with open("src/extent.h", "w") as f:
-        f.write("const unsigned L = {};\n".format(extent))
+    env.Append(CPPDEFINES={'L': extent})
 
     for line in open('.bits').readlines():
         (beta,bits) = line.split()

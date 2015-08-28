@@ -10,7 +10,6 @@
 #include <signal.h>
 #include <sys/stat.h>
 
-#include "extent.h"
 
 typedef float floatT;
 
