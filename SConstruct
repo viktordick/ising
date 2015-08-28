@@ -52,18 +52,19 @@ else:
     print("cxx argument not recognized.")
     Exit()
 
-extent = int(open('extent').read())
-with open("src/extent.h", "w") as f:
-    f.write("const unsigned L = {};\n".format(extent))
+if os.path.exists('extent') and os.path.exists('.bits'):
+    extent = int(open('extent').read())
+    with open("src/extent.h", "w") as f:
+        f.write("const unsigned L = {};\n".format(extent))
 
-for line in open('.bits').readlines():
-    (beta,bits) = line.split()
-    Command(".h/{}/random.h".format(bits), "random", "./random {} > $TARGET".format(bits))
-    o = env.Object(
-        "{}/ising/{}_{}.o".format(objdir,extent,bits), 
-        objdir+'/ising.cpp', 
-        CPPPATH='.h/{}'.format(bits))
-    env.Program("{}/ising/{}/{}".format(bindir,extent,beta), o)
+    for line in open('.bits').readlines():
+        (beta,bits) = line.split()
+        Command(".h/{}/random.h".format(bits), "random", "./random {} > $TARGET".format(bits))
+        o = env.Object(
+            "{}/ising/{}_{}.o".format(objdir,extent,bits), 
+            objdir+'/ising.cpp', 
+            CPPPATH='.h/{}'.format(bits))
+        env.Program("{}/ising/{}/{}".format(bindir,extent,beta), o)
 
 env.Program(
     bindir+"/analyze", 
@@ -72,12 +73,13 @@ env.Program(
     LIBPATH=["/usr/lib/x86_64-linux-gnu"], 
     LIBS=["boost_filesystem","boost_system"]
     )
-results = []
-for datafile in Glob('data/*/*', strings=True):
-    result = 'result'+datafile[4:]
-    Command(result, [datafile, 'bin/analyze'], 'bin/analyze 100 1000 $SOURCE > $TARGET')
-    results.append(result)
+if os.path.exists('data'):
+    results = []
+    for datafile in Glob('data/*/*', strings=True):
+        result = 'result'+datafile[4:]
+        Command(result, [datafile, 'bin/analyze'], 'bin/analyze 100 1000 $SOURCE > $TARGET')
+        results.append(result)
 
-env["ENV"]["PATH"]+= ":~/bin"
-env.Command(["M.pdf", 'chi.pdf'], [results, "./plot"], "./plot")
+    env["ENV"]["PATH"]+= ":~/bin"
+    env.Command(["M.pdf", 'chi.pdf'], [results, "./plot"], "./plot")
 

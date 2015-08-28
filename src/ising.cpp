@@ -95,7 +95,7 @@ int main(int argc, char** argv)
     out_file_name << "data/" << std::setfill('0') << std::setw(3) << extent;
     mkdir(out_file_name.str().c_str(), 0775);
     out_file_name << "/" << std::fixed << std::setprecision(10) << beta;
-    auto size = getFilesize(out_file_name.str().c_str())/sizeof(floatT);
+    int measured = getFilesize(out_file_name.str().c_str())/sizeof(floatT);
 
     if (ising.load()) {
         std::cout << "# Resume "; 
@@ -108,19 +108,16 @@ int main(int argc, char** argv)
     }
     std::cout << "L=" << extent << ", beta=" << std::fixed << beta << ", Nmeas=";
 
-    if (m == std::ofstream::app) {
-        std::cout << nmeas-size << '/' << nmeas;
-        nmeas -= size;
-    } else
-        std::cout << nmeas;
-    std::cout << std::endl;
+    if (m == std::ofstream::app)
+        std::cout << std::max(nmeas-measured,0) << '/';
+    std::cout << nmeas << std::endl;
 
     std::ofstream outfile(out_file_name.str().c_str(), m);
     if (outfile.fail()) {
         std::cerr << "Output file could not be opened. Aborting." << std::endl;
         return -1;
     }
-    for (int i=0; keepRunning && i<nmeas; i++) {
+    for (; keepRunning && measured<nmeas; measured++) {
         for (int j=0; j<10; j++)
             ising.sweep();
         floatT M = ising.magnetization();
