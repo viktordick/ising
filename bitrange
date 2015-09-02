@@ -29,8 +29,14 @@ class bitfield:
             val = 0
         self.bits = [val] + self.bits
     def inc(self):
-        self.p += 2**(-len(self.bits))
-        for i in range(len(self.bits)):
+        """increment value, ensuring that last bit is a 1"""
+        if self.bits[0] == 0:
+            self.p += self.lsb
+            self.bits[0] = 1
+            return
+
+        self.p += 2*self.lsb
+        for i in range(1,len(self.bits)):
             if self.bits[i] == 0:
                 self.bits[i] = 1
                 break
@@ -42,7 +48,7 @@ class bitfield:
             if s=='' and i==0:
                 continue
             s = str(i)+s
-        return "{:6f} {}".format(-0.25*log(self.p), s)
+        return "{:.10f} {}".format(-0.25*log(self.p), s)
 
 b = bitfield()
 inc = 1
