@@ -6,9 +6,18 @@ fi
 
 ./bitrange $2 $3 $4 | sort > .bits
 echo $1 > extent
-scons -j8 bin || exit
+scons -j24 bin/ising
 
 for beta in $(cat .bits | mycut 1 )
 do
-    echo bin/ising/$1/$beta $5 
-done | parallelize 4
+    (
+    echo "#!/bin/bash"
+    echo "bin/ising/$1/$beta $5"
+    ) | sbatch \
+    --job-name=ising-$1-$beta \
+    --partition=GTX \
+    --mail-type=FAIL \
+    --gres=cpuonly:1 \
+    --output=out/$1-$beta \
+    --error=err
+done

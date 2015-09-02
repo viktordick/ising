@@ -65,14 +65,14 @@ class Ising {
             fname << '/' << L;
             mkdir(fname.str().c_str(), 0755);
             fname << "/" << std::fixed << std::setprecision(5) << beta;
-            std::ofstream f(fname.str(), std::ofstream::ate);
+            std::ofstream f(fname.str().c_str(), std::ofstream::ate);
             for (int x=0; x<L; x++) 
                 f << dat[0][x] << ' ' << dat[1][x] << std::endl;
         }
         bool load() {
             std::stringstream fname;
             fname << ".state/" << L << "/" << std::fixed << std::setprecision(5) << beta;
-            std::ifstream f(fname.str());
+            std::ifstream f(fname.str().c_str());
             if (f.fail()) {
                 return false;
             }

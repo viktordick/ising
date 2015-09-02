@@ -6,6 +6,7 @@
 #include <sstream>
 #include <fstream>
 #include <boost/filesystem.hpp>
+#include <math.h>
 
 namespace fs = boost::filesystem;
 
@@ -20,15 +21,15 @@ T sqr(T x) {
 
 floatT sum(const Vector &values) {
     floatT result = 0.;
-    for (auto v : values)
-        result += v;
+    for (int i=0; i<values.size(); i++)
+        result += values[i];
     return result;
 }
 
 floatT sumsqr(const Vector &values) {
     floatT result = 0.;
-    for (auto v : values)
-        result += v*v;
+    for (int i=0; i<values.size(); i++)
+        result += values[i]*values[i];
     return result;
 }
 
@@ -139,7 +140,7 @@ int main(int argc, char** argv)
     int therm = atoi(argv[2]);
     std::string filename = argv[3];
 
-    fs::path path{filename};
+    fs::path path(filename);
     floatT beta = atof(path.filename().c_str());
     int extent = atoi(path.parent_path().filename().c_str());
 
@@ -159,7 +160,7 @@ int main(int argc, char** argv)
         return -1;
     }
     // Open file
-    std::ifstream f(filename);
+    std::ifstream f(filename.c_str());
 
 
     // magnetization values

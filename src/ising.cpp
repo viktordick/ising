@@ -1,8 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <random>
-#include <chrono>
+#include <boost/random.hpp>
 #include <vector>
 #include <sstream>
 
@@ -28,9 +27,20 @@ int inc(int x, int N=L){
     return (x==N-1)?0:(x+1);
 }
 
+class mt19937_64 {
+    private:
+        boost::mt19937 base;
+    public:
+        typedef uint64_t result_type;
+        mt19937_64(result_type seed):
+            base(seed) {};
+        result_type operator()() {
+            return result_type(base())<<32 | base();
+        }
+};
 class Random {
     private:
-        typedef std::mt19937_64 Gen;
+        typedef mt19937_64 Gen;
         typedef Gen::result_type result_type;
         Gen r;
     public:
@@ -63,6 +73,7 @@ void intHandler(int dummy) {
 int main(int argc, char** argv)
 {
     signal(SIGINT, intHandler);
+    signal(SIGTERM, intHandler);
 
     srand48(time(NULL));
     std::stringstream s;
@@ -76,16 +87,8 @@ int main(int argc, char** argv)
     }
     const int extent = L;
 
-    auto now = std::chrono::system_clock::now();
-    auto tt = std::chrono::system_clock::to_time_t(now);
-    auto tm = std::tm{0};
-    localtime_r(&tt, &tm);
-    std::cout.fill('0');
-    std::cout << std::setw(2) << tm.tm_hour 
-        << ':' << std::setw(2) << tm.tm_min 
-        << ':' << std::setw(2) << tm.tm_sec << ' ';
 
-    const unsigned seed = now.time_since_epoch().count();
+    const unsigned seed = time(NULL);
     Ising ising(seed);
     std::ofstream::openmode m;
 
@@ -117,7 +120,7 @@ int main(int argc, char** argv)
         return -1;
     }
     for (; keepRunning && measured<nmeas; measured++) {
-        for (int j=0; j<10; j++)
+        for (int j=0; j<L; j++)
             ising.sweep();
         floatT M = ising.magnetization();
         write(outfile,M);

@@ -5,15 +5,7 @@ struct Line { //one line of spin variables on half lattice
     private:
         static const int LH = L/2;
         //use shortest unsigned integer type that has enough bits to hold LH
-        typedef unsigned char INT0;
-        typedef unsigned int INT1;
-        typedef unsigned long int INT2;
-        typedef unsigned long long int INT3;
-
-        typedef std::conditional< 8*sizeof(INT0)>=LH, INT0,
-                std::conditional< 8*sizeof(INT1)>=LH, INT1, 
-                std::conditional< 8*sizeof(INT2)>=LH, INT2, 
-                INT3>::type>::type>::type T;
+        typedef uint64_t T;
         static const int B = 8*sizeof(T); //how many bits in one element
         static const int N = 1+(LH-1)/B; //how many elements we need for one line
         //constant line where every relevant bit is set

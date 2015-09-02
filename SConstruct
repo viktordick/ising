@@ -8,6 +8,9 @@ CacheDir('.cache')
 env = Environment()
 env.VariantDir('.obj', 'src', duplicate=0)
 
+for i in ["PATH", "TERM"]:
+    env["ENV"][i] = os.environ[i]
+
 
 try:
     from colorizer import colorizer
@@ -15,11 +18,9 @@ try:
 except ImportError:
     pass
 
-env["ENV"]["TERM"] = os.environ["TERM"] #to get clang to display colored output
 env.Append(CCFLAGS=Split("""
     -march=native
     -Wall
-    -std=c++11
     -Wno-sign-compare
     """) + (["-g","-O0"] if 'debug' in ARGUMENTS else ["-O3"]))
 
@@ -58,12 +59,12 @@ if os.path.exists('extent') and os.path.exists('.bits'):
 
     for line in open('.bits').readlines():
         (beta,bits) = line.split()
-        Command(".h/{}/random.h".format(bits), "random", "./random {} > $TARGET".format(bits))
+        env.Command(".h/{0}/random.h".format(bits), "random", "./random {0} > $TARGET".format(bits))
         o = env.Object(
-            "{}/ising/{}_{}.o".format(objdir,extent,bits), 
+            "{0}/ising/{1}_{2}.o".format(objdir,extent,bits), 
             objdir+'/ising.cpp', 
-            CPPPATH='.h/{}'.format(bits))
-        env.Program("{}/ising/{}/{}".format(bindir,extent,beta), o)
+            CPPPATH='.h/{0}'.format(bits))
+        env.Program("{0}/ising/{1}/{2}".format(bindir,extent,beta), o)
 
 env.Program(
     bindir+"/analyze", 
@@ -76,7 +77,7 @@ if os.path.exists('data'):
     results = []
     for datafile in Glob('data/*/*', strings=True):
         result = 'result'+datafile[4:]
-        Command(result, [datafile, 'bin/analyze'], 'bin/analyze 100 1000 $SOURCE > $TARGET')
+        env.Command(result, [datafile, 'bin/analyze'], 'bin/analyze 100 1000 $SOURCE > $TARGET')
         results.append(result)
 
     env["ENV"]["PATH"]+= ":~/bin"
