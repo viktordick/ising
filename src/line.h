@@ -15,13 +15,14 @@ struct Line { //one line of spin variables on half lattice
     public:
         void init_random(Random &r) {
             for (int i=0; i<N; i++)
-                dat[i] = r.uniform();
+                dat[i] = r();
             dat[0] &= FullLine;
         }
         //only keep 'up' bits with probability exp(-beta dE) 
+        template<class R>
         void randomize(Random &r) {
             for (int i=0; i<N; i++)
-                dat[i] &= ~r.e4beta();
+                dat[i] &= R::get(r);
         }
         Line() {
             for (int i=0; i<N; i++)

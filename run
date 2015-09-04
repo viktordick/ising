@@ -3,21 +3,34 @@ if [ $# -lt 5 ]; then
     echo "usage: $0 L betamin betamax bits Nmeas"
     exit
 fi
+L=$1
+betamin=$2
+betamax=$3
+bits=$4
+nmeas=$5
 
-./bitrange $2 $3 $4 | sort > .bits
-echo $1 > extent
-scons -j24 bin/ising
+# ./bitrange $betamin $betamax $bits | sort > .bits
+# test -s .bits || exit
+# sigmin=$(head -n 1 .bits)
+# sigmax=$(tail -n 1 .bits)
+sigs=$(./bitrange $betamin $betamax $bits)
+exe=$betamin-$betamax-$bits
+scons -j24 bin/ising exe=$exe sigs="$sigs" L=$L || exit
 
-for beta in $(cat .bits | mycut 1 )
+for sig in $sigs
 do
-    (
-    echo "#!/bin/bash"
-    echo "bin/ising/$1/$beta $5"
-    ) | sbatch \
-    --job-name=ising-$1-$beta \
-    --partition=GTX \
-    --mail-type=FAIL \
-    --gres=cpuonly:1 \
-    --output=out/$1-$beta \
-    --error=err
-done
+    echo "bin/ising/$L/$exe $sig $nmeas"
+done | parallelize 4
+# for beta in $(cat .bits | mycut 1 )
+# do
+#     (
+#     echo "#!/bin/bash"
+#     echo "bin/ising/$1/$beta $5"
+#     ) | sbatch \
+#     --job-name=ising-$1-$beta \
+#     --partition=GTX \
+#     --mail-type=FAIL \
+#     --gres=cpuonly:1 \
+#     --output=out/$1-$beta \
+#     --error=err
+# done

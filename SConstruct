@@ -12,11 +12,12 @@ for i in ["PATH", "TERM"]:
     env["ENV"][i] = os.environ[i]
 
 
-try:
-    from colorizer import colorizer
-    colorizer().colorize(env)
-except ImportError:
-    pass
+if ARGUMENTS.get('color', 1) == 1:
+    try:
+        from colorizer import colorizer
+        colorizer().colorize(env)
+    except ImportError:
+        pass
 
 env.Append(CCFLAGS=Split("""
     -march=native
@@ -53,18 +54,21 @@ else:
     print("cxx argument not recognized.")
     Exit()
 
-if os.path.exists('extent') and os.path.exists('.bits'):
-    extent = int(open('extent').read())
-    env.Append(CPPDEFINES={'L': extent})
+try:
+    sigs = ARGUMENTS['sigs']
+    L = ARGUMENTS['L']
+    exe = ARGUMENTS.get('exe','ising')
+    env.Append(CPPDEFINES={'L': L})
+    sigs = ' '.join(sigs.split())
 
-    for line in open('.bits').readlines():
-        (beta,bits) = line.split()
-        env.Command(".h/{0}/random.h".format(bits), "random", "./random {0} > $TARGET".format(bits))
-        o = env.Object(
-            "{0}/ising/{1}_{2}.o".format(objdir,extent,bits), 
-            objdir+'/ising.cpp', 
-            CPPPATH='.h/{0}'.format(bits))
-        env.Program("{0}/ising/{1}/{2}".format(bindir,extent,beta), o)
+    inc=".h/{0}/{1}".format(L,exe)
+    h = env.Command(inc+"/random.h", "random", "./random {0} > $TARGET".format(sigs))
+    o = env.Object("{0}/ising/{1}/{2}.o".format(objdir, L, exe),
+        objdir+"/ising.cpp", CPPPATH=inc)
+    env.Depends(o,h)
+    env.Program("{0}/ising/{1}/{2}".format(bindir,L,exe),o)
+except KeyError:
+    pass
 
 env.Program(
     bindir+"/analyze", 

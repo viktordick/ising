@@ -3,26 +3,32 @@
 from sys import argv
 from math import log
 
-bits = argv[1]
-
-value = 0
-for bit in reversed(bits):
-    if bit == '1':
-        value += 1
-    value /= 2
-print("// p = {}".format(value))
-print("const double beta = {};".format(-0.25*log(value)))
-
-print("inline Random::result_type Random::e4beta() {")
-print("    Random::result_type result = r();")
-
-init = False
-for bit in reversed(bits):
-    if not init:
+def beta(sig):
+    result = 0
+    val = 1
+    for bit in sig:
+        val /= 2
         if bit == '1':
-            init = True
-        continue
-    print("    result {}= r();".format('|' if bit=='0' else '&'))
+            result += val
+    return -0.25*log(1-result)
 
-print("    return result;")
+sigs = argv[1:]
+
+for sig in sigs:
+    print("""struct Random_{} {{
+    static const double beta = {};
+    static Random::result_type get(Random &r) {{;
+        Random::result_type result = r();""".format(sig,beta(sig)))
+    for bit in reversed(sig[:-1]):
+        print("        result {0}= r();".format('|' if bit=='0' else '&'))
+    print("""        return result;
+    }}
+}};
+""".format(sig))
+
+print("void run(std::string &sig, Random::result_type seed, int nmeas) { ")
+for sig in sigs:
+    print("""
+    if (sig == "{0}") 
+        Ising<Random_{0}>(seed, nmeas);""".format(sig))
 print("}")
