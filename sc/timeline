@@ -8,8 +8,8 @@ function plot {
     ( 
     echo "set yr [0:1]"
     echo "plot '$1' binary format='%float' using :1 w l t ''"
-    ) > timeline.gpi 
-    gplpdf timeline.gpi > /dev/null
+    ) > plot/timeline.gpi 
+    gplpdf plot/timeline.gpi > /dev/null
     size=$(cat $1 | wc -c)
     let size/=4
     let size--
@@ -17,9 +17,9 @@ function plot {
     rm timeline.gpi
 }
 test -s $1 && plot $1
-zathura timeline.pdf &
+zathura plot/timeline.pdf &
 while true; do
-    while [[ ( $1 -ot timeline.pdf ) || ! -s $1 ]]; do
+    while [[ ( $1 -ot plot/timeline.pdf ) || ! -s $1 ]]; do
         sleep 1 || exit
     done
     plot $1

@@ -43,7 +43,6 @@ class bitfield:
                 continue
             s = str(i)+s
         return s
-#         return "{:6f} {}".format(-0.25*log(self.p), s)
 
 b = bitfield()
 inc = 1

@@ -62,7 +62,7 @@ try:
     sigs = ' '.join(sigs.split())
 
     inc=".h/{0}/{1}".format(L,exe)
-    h = env.Command(inc+"/random.h", "random", "./random {0} > $TARGET".format(sigs))
+    h = env.Command(inc+"/random.h", "sc/random", "sc/random {0} > $TARGET".format(sigs))
     o = env.Object("{0}/ising/{1}/{2}.o".format(objdir, L, exe),
         objdir+"/ising.cpp", CPPPATH=inc)
     env.Depends(o,h)
@@ -85,5 +85,5 @@ if os.path.exists('data'):
         results.append(result)
 
     env["ENV"]["PATH"]+= ":~/bin"
-    env.Command(["M.pdf", 'chi.pdf'], [results, "./plot"], "./plot")
+    env.Command(["plot/mag.pdf", 'plot/chi.pdf'], [results, "sc/plot"], "sc/plot")
 

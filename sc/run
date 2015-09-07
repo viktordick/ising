@@ -1,0 +1,19 @@
+#!/bin/bash
+if [ $# -lt 5 ]; then
+    echo "usage: $0 L betamin betamax bits Nmeas"
+    exit
+fi
+L=$1
+betamin=$2
+betamax=$3
+bits=$4
+nmeas=$5
+
+sigs=$(sc/bitrange $betamin $betamax $bits)
+exe=$betamin-$betamax-$bits
+scons -j24 bin/ising exe=$exe sigs="$sigs" L=$L || exit
+
+for sig in $sigs
+do
+    echo "bin/ising/$L/$exe $sig $nmeas"
+done | parallelize 4
