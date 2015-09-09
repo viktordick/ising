@@ -15,7 +15,7 @@ class Ising {
             mkdir("data",0775);
             out_file_name << "data/" << std::setfill('0') << std::setw(3) << L;
             mkdir(out_file_name.str().c_str(), 0775);
-            out_file_name << "/" << std::fixed << std::setprecision(20) << R::beta;
+            out_file_name << "/" << std::fixed << std::setprecision(20) << R::p;
             measured = getFilesize(out_file_name.str().c_str())/sizeof(floatT);
             if (load()) {
                 std::cout << "# Resume "; 
@@ -23,10 +23,14 @@ class Ising {
             } else {
                 std::cout << "#   Init ";
                 m = std::ofstream::trunc;
-                if (R::beta < 0.44)
+                if (R::p < 0.83)
                     randomize();
             }
-            std::cout << "L=" << L << ", beta=" << std::fixed << R::beta << ", Nmeas=";
+            std::cout 
+                << "L=" << L 
+                << ", p=" << std::fixed << R::p
+                << ", beta=" << std::fixed << -0.25*log(1-R::p) 
+                << ", Nmeas=";
             if (m == std::ofstream::app)
                 std::cout << std::max(nmeas-measured,0) << '/';
             std::cout << nmeas << std::endl;
@@ -100,14 +104,14 @@ class Ising {
             mkdir(fname.str().c_str(), 0755);
             fname << '/' << L;
             mkdir(fname.str().c_str(), 0755);
-            fname << "/" << std::fixed << std::setprecision(5) << R::beta;
+            fname << "/" << std::fixed << std::setprecision(20) << R::p;
             std::ofstream f(fname.str().c_str(), std::ofstream::ate);
             for (int x=0; x<L; x++) 
                 f << dat[0][x] << ' ' << dat[1][x] << std::endl;
         }
         bool load() {
             std::stringstream fname;
-            fname << ".state/" << L << "/" << std::fixed << std::setprecision(5) << R::beta;
+            fname << ".state/" << L << "/" << std::fixed << std::setprecision(20) << R::p;
             std::ifstream f(fname.str().c_str());
             if (f.fail()) {
                 return false;

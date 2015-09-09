@@ -3,22 +3,24 @@
 from sys import argv
 from math import log
 
-def beta(sig):
+def p(sig):
     result = 0
     val = 1
     for bit in sig:
         val /= 2
         if bit == '1':
             result += val
-    return -0.25*log(1-result)
+    return result
+def beta(sig):
+    return -0.25*log(1-p(sig))
 
 sigs = argv[1:]
 
 for sig in sigs:
     print("""struct Random_{} {{
-    static const double beta = {};
-    static Random::result_type get(Random &r) {{;
-        Random::result_type result = r();""".format(sig,beta(sig)))
+    static const double p = {};
+    static Random::result_type get(Random &r) {{
+        Random::result_type result = r();""".format(sig,p(sig)))
     for bit in reversed(sig[:-1]):
         print("        result {0}= r();".format('|' if bit=='0' else '&'))
     print("""        return result;

@@ -64,7 +64,7 @@ try:
     env.Append(CPPDEFINES={'L': L})
     sigs = ' '.join(sigs.split())
 
-    inc=".h/{0}/{1}".format(L,exe)
+    inc=".h/{0}".format(exe)
     h = env.Command(inc+"/random.h", "sc/random", "sc/random {0} > $TARGET".format(sigs))
     o = env.Object("{0}/ising/{1}/{2}.o".format(objdir, L, exe),
         objdir+"/ising.cpp", CPPPATH=inc)
@@ -80,13 +80,13 @@ env.Program(
     LIBPATH=["/usr/lib/x86_64-linux-gnu"], 
     LIBS=["boost_filesystem","boost_system"]
     )
+results = Glob('result/*/*', strings=True)
 if os.path.exists('data'):
     for datafile in Glob('data/*/*', strings=True):
-        result = 'result'+datafile[4:]
-        env.Command(result, [datafile, 'bin/analyze'], 'bin/analyze 100 1000 $SOURCE > $TARGET')
+        results.append(env.Command('result'+datafile[4:], 
+            [datafile, 'bin/analyze'], 
+            'bin/analyze 100 1000 $SOURCE > $TARGET'))
 
-    env["ENV"]["PATH"]+= ":~/bin"
-
-if os.path.exists('result'):
-    env.Command(["plot/mag.pdf", 'plot/chi.pdf'], ["sc/plot"]+Glob('result/*/*', strings=True), "sc/plot")
+env["ENV"]["PATH"]+= ":~/bin"
+env.Command(["plot/mag.pdf", 'plot/chi.pdf'], ["sc/plot"]+results, "sc/plot")
 

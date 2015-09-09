@@ -141,8 +141,9 @@ int main(int argc, char** argv)
     std::string filename = argv[3];
 
     fs::path path(filename);
-    floatT beta = atof(path.filename().c_str());
-    int extent = atoi(path.parent_path().filename().c_str());
+    const floatT p = atof(path.filename().c_str());
+    const floatT beta = -0.25*log(1-p);
+    const int extent = atoi(path.parent_path().filename().c_str());
 
 
     //some checks

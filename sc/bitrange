@@ -4,15 +4,15 @@ from sys import argv,exit
 from math import log,exp
 
 if (len(argv) != 4):
-    print(argv[0],"minbeta maxbeta maxbits")
+    print(argv[0],"pmin pmax maxbits")
     exit()
 
-betamin = float(argv[1])
-betamax = float(argv[2])
+pmin = max(0,float(argv[1]))
+pmax = min(1,float(argv[2]))
 maxbits = int(argv[3])
 
-pmin = 1-exp(-4*betamin)
-pmax = 1-exp(-4*betamax)
+# pmin = 1-exp(-4*betamin)
+# pmax = 1-exp(-4*betamax)
 
 class bitfield:
     def __init__(self):
@@ -38,11 +38,16 @@ class bitfield:
                 self.bits[i] = 0
     def __repr__(self):
         s = ''
+#         val = 0
         for i in self.bits:
             if s=='' and i==0:
                 continue
             s = str(i)+s
+#             val /= 2
+#             if i == 1:
+#                 val += 0.5
         return s
+#         return "{{:{}}} {{}}".format(maxbits).format(s,val)
 
 b = bitfield()
 inc = 1

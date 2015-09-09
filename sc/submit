@@ -1,28 +1,32 @@
-#!/bin/bash
-if [ $# -lt 5 ]; then
-    echo "usage: $0 L betamin betamax bits Nmeas"
-    exit
-fi
-L=$1
-betamin=$2
-betamax=$3
-bits=$4
-nmeas=$5
+#!/usr/bin/env python3
 
-sigs=$(sc/bitrange $betamin $betamax $bits)
-exe=$betamin-$betamax-$bits
-scons -j24 bin/ising exe=$exe sigs="$sigs" L=$L || exit
+import sys, subprocess
 
-for sig in $sigs
-do
-    (
-    echo "#!/bin/bash"
-    echo "bin/ising/$L/$exe $sig $nmeas"
-    ) | sbatch \
-    --job-name=ising-$L-$sig \
+def prob(sig):
+    result = 0
+    val = 1
+    for bit in sig:
+        val /= 2
+        if bit == '1':
+            result += val
+    return result
+
+if len(sys.argv) != 6:
+    print("usage: {} L pmin pmax bits Nmeas".format(sys.argv[0]))
+    sys.exit()
+[L,pmin,pmax,bits,nmeas] = sys.argv[1:]
+
+sigs=subprocess.check_output(['sc/bitrange', pmin, pmax, bits], universal_newlines=True)
+exe="{}-{}-{}".format(pmin,pmax,bits)
+subprocess.call(["scons","-j24","bin/ising","exe="+exe,"sigs="+sigs,"L="+L],universal_newlines=True)
+for sig in sigs.split():
+    p = subprocess.Popen("""sbatch \
+    --job-name=ising-{L}-{p} \
     --partition=Tesla \
-    --mail-type=FAIL \
+    --mail-type=Fail \
     --gres=cpuonly:1 \
-    --output=out/$1-$sig \
-    --error=out/err
-done
+    --output=out \
+    --error=err
+    """.format(L = L, p=prob(sig)), shell=True, universal_newlines=True, stdin=subprocess.PIPE)
+    p.communicate("""#!/bin/bash
+bin/ising/{L}/{exe} {sig} {nmeas}""".format(L=L,exe=exe,sig=sig,nmeas=nmeas))
