@@ -13,14 +13,14 @@ sigs=$(sc/bitrange $betamin $betamax $bits)
 exe=$betamin-$betamax-$bits
 scons -j24 bin/ising exe=$exe sigs="$sigs" L=$L || exit
 
-for sig is $sigs
+for sig in $sigs
 do
     (
     echo "#!/bin/bash"
     echo "bin/ising/$L/$exe $sig $nmeas"
     ) | sbatch \
     --job-name=ising-$L-$sig \
-    --partition=GTX \
+    --partition=Tesla \
     --mail-type=FAIL \
     --gres=cpuonly:1 \
     --output=out/$1-$sig \

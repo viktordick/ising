@@ -32,7 +32,7 @@ void write(std::ostream &out, T x) {
     out.write((char*)&x, sizeof(T));
 }
 
-#if 0
+#ifdef GDEV
 class Random {
     private:
         boost::mt19937 base;

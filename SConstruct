@@ -1,4 +1,5 @@
 import os
+from socket import gethostname
 
 srcdir = 'src'
 objdir = '.obj'
@@ -54,6 +55,8 @@ else:
     print("cxx argument not recognized.")
     Exit()
 
+if gethostname() == 'gdev1':
+    env.Append(CPPDEFINES=['GDEV'])
 try:
     sigs = ARGUMENTS['sigs']
     L = ARGUMENTS['L']
@@ -78,12 +81,12 @@ env.Program(
     LIBS=["boost_filesystem","boost_system"]
     )
 if os.path.exists('data'):
-    results = []
     for datafile in Glob('data/*/*', strings=True):
         result = 'result'+datafile[4:]
         env.Command(result, [datafile, 'bin/analyze'], 'bin/analyze 100 1000 $SOURCE > $TARGET')
-        results.append(result)
 
     env["ENV"]["PATH"]+= ":~/bin"
-    env.Command(["plot/mag.pdf", 'plot/chi.pdf'], [results, "sc/plot"], "sc/plot")
+
+if os.path.exists('result'):
+    env.Command(["plot/mag.pdf", 'plot/chi.pdf'], ["sc/plot"]+Glob('result/*/*', strings=True), "sc/plot")
 
