@@ -21,7 +21,7 @@ exe="{}-{}-{}".format(pmin,pmax,bits)
 subprocess.call(["scons","-j24","bin/ising","exe="+exe,"sigs="+sigs,"L="+L],universal_newlines=True)
 for sig in sigs.split():
     p = subprocess.Popen("""sbatch \
-    --job-name=ising-{L}-{p} \
+    --job-name="ising-{L}-{p:<15}" \
     --partition=Tesla \
     --mail-type=Fail \
     --gres=cpuonly:1 \

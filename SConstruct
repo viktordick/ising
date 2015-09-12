@@ -80,10 +80,12 @@ env.Program(
     LIBPATH=["/usr/lib/x86_64-linux-gnu"], 
     LIBS=["boost_filesystem","boost_system"]
     )
+nc = env.Clone()
+nc.CacheDir(None)
 results = Glob('result/*/*', strings=True)
 if os.path.exists('data'):
     for datafile in Glob('data/*/*', strings=True):
-        results.append(env.Command('result'+datafile[4:], 
+        results.append(nc.Command('result'+datafile[4:], 
             [datafile, 'bin/analyze'], 
             'bin/analyze 100 1000 $SOURCE > $TARGET'))
 
