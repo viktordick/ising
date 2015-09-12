@@ -137,7 +137,7 @@ int main(int argc, char** argv)
         return 1;
     }
     int blocksize = atoi(argv[1]);
-    int therm = atoi(argv[2]);
+    float therm = atof(argv[2]);
     std::string filename = argv[3];
 
     fs::path path(filename);
@@ -152,8 +152,8 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    if ((therm<0)||(therm>100000)) {
-        std::cerr << "# Number of thermalisation steps should be >0, <100000, is " << therm << std::endl;
+    if ((therm<0)||(therm>1)) {
+        std::cerr << "# percentage of thermalisation should be >0, <1, is " << therm << std::endl;
         return -1;
     }
     if (blocksize<1) {
@@ -172,22 +172,23 @@ int main(int argc, char** argv)
         std::cerr << "# Opening file " << filename << " failed!" << std::endl;
         return 1; 
     }
-    int v_count = 0; //number of read values
     while (true) {
         floatTdisk value;
         f.read((char*)&value, sizeof(value));
         if (f.eof())
             break;
-        v_count++;
-        if (v_count > therm)
-            mag.push_back(value);
+        mag.push_back(value);
     }
-
+    const int skip = mag.size()*therm;
+    const int count = ((mag.size()-skip)/blocksize)*blocksize;
+    for (int i=0; i<count; i++)
+        mag[i] = mag[i+skip];
 
     // Run analysis
     std::cerr << "# At beta " << std::fixed << beta << 
-        ": read in " << std::setw(7) << v_count << 
-        " values, analysing " << std::setw(7) << mag.size();
+        ": read in " << std::setw(7) << mag.size() << 
+        " values, analysing " << std::setw(7) << count;
+    mag.resize(count);
 
     jackknife( mag, blocksize, beta, extent );
     std::cerr << std::endl;

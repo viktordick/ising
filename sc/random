@@ -18,17 +18,18 @@ sigs = argv[1:]
 
 for sig in sigs:
     print("""struct Random_{} {{
-    static const double p = {};
+    static const double p;
     static Random::result_type get(Random &r) {{
-        Random::result_type result = r();""".format(sig,p(sig)))
+        Random::result_type result = r();""".format(sig))
     for bit in reversed(sig[:-1]):
         print("        result {0}= r();".format('|' if bit=='0' else '&'))
     print("""        return result;
     }}
 }};
-""".format(sig))
+const double Random_{}::p = {};
+""".format(sig,p(sig)))
 
-print("void run(std::string &sig, Random::result_type seed, int nmeas) { ")
+print("void run(std::string sig, Random::result_type seed, int nmeas) { ")
 for sig in sigs:
     print("""
     if (sig == "{0}") 

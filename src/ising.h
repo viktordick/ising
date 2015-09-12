@@ -5,11 +5,13 @@ template <class R>
 class Ising {
     private:
         Random r;
-        Line dat[2][L];
+        std::vector<Line> dat[2];
         std::ofstream out;
         int measured;
     public:
         Ising(Random::result_type seed, int nmeas) :r(seed) {
+            dat[0].resize(L);
+            dat[1].resize(L);
             std::ofstream::openmode m;
             std::stringstream out_file_name;
             mkdir("data",0775);
@@ -41,7 +43,8 @@ class Ising {
                 return;
             }
             for (; keepRunning && measured<nmeas; measured++) {
-                for (int j=0; j<L; j++)
+                std::cout << measured << std::endl;
+                for (int j=0; j<10; j++)
                     sweep();
                 measure();
             }
@@ -62,7 +65,8 @@ class Ising {
 
                 for (int x=0; x<L; x++) {
                     Line &c = dat[eo][x];
-                    Line *o = dat[1-eo];
+                    const std::vector<Line> &o = dat[1-eo];
+//                     Line *o = dat[1-eo];
                     //each line represents one neighbor (nb.), with bit set if that neighbor
                     //is antiparallel (a.p.) to c
                     Line n[4] = {
