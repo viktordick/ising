@@ -39,18 +39,18 @@ floatT sumsqr(const Vector &values) {
 //! interesting one you might want to read:
 void jackknife(
         Vector &values, 	// Array and number of data points
-        int blocksize,   		// Blocksize for the jackknife
+        int num_blocks,   		// Number of jackknife blocks
         floatT beta, int extent)	// Beta and extent of the lattice
 {
-    // Number of jackknife block
-    const int num_blocks = values.size() / blocksize;
+    // Size of jackknife blocks
+    const int blocksize = values.size() / num_blocks;
 
     // Cut off the last datapoints so all blocks are filled
     const int count = num_blocks*blocksize;
     values.resize(count); 
 
     // Check we have a reasonably big data set
-    if (num_blocks < 4) {
+    if (blocksize < 4) {
         std::cerr << " - skipped.";
         return; 
     }
@@ -133,10 +133,10 @@ void jackknife(
 int main(int argc, char** argv)
 { 
     if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " blocksize therm filename" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " blockcount therm filename" << std::endl;
         return 1;
     }
-    int blocksize = atoi(argv[1]);
+    int blockcount = atoi(argv[1]);
     float therm = atof(argv[2]);
     std::string filename = argv[3];
 
@@ -156,8 +156,8 @@ int main(int argc, char** argv)
         std::cerr << "# percentage of thermalisation should be >0, <1, is " << therm << std::endl;
         return -1;
     }
-    if (blocksize<1) {
-        std::cerr << "# JK-blocksize shoud be > 0, is " <<  blocksize<< std::endl;
+    if (blockcount<1) {
+        std::cerr << "# JK-blockcount shoud be > 0, is " <<  blockcount << std::endl;
         return -1;
     }
     // Open file
@@ -180,7 +180,7 @@ int main(int argc, char** argv)
         mag.push_back(value);
     }
     const int skip = mag.size()*therm;
-    const int count = ((mag.size()-skip)/blocksize)*blocksize;
+    const int count = ((mag.size()-skip)/blockcount)*blockcount;
     for (int i=0; i<count; i++)
         mag[i] = mag[i+skip];
 
@@ -190,7 +190,7 @@ int main(int argc, char** argv)
         " values, analysing " << std::setw(7) << count;
     mag.resize(count);
 
-    jackknife( mag, blocksize, beta, extent );
+    jackknife( mag, blockcount, beta, extent );
     std::cerr << std::endl;
 }
 

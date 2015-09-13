@@ -25,7 +25,7 @@ class Ising {
             } else {
                 std::cout << "#   Init ";
                 m = std::ofstream::trunc;
-                if (R::p < 0.83)
+                if (R::p < 0.828)
                     randomize();
             }
             std::cout 
@@ -43,7 +43,6 @@ class Ising {
                 return;
             }
             for (; keepRunning && measured<nmeas; measured++) {
-                std::cout << measured << std::endl;
                 for (int j=0; j<10; j++)
                     sweep();
                 measure();

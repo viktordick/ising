@@ -82,6 +82,7 @@ env.Program(
     )
 nc = env.Clone()
 nc.CacheDir(None)
+nc.Decider('MD5-timestamp')
 results = Glob('result/*/*', strings=True)
 if os.path.exists('data'):
     for datafile in Glob('data/*/*', strings=True):

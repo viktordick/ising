@@ -4,23 +4,30 @@ if [ $# -lt 1 ]; then
     exit
 fi
 
-function plot {
-    ( 
-    echo "set yr [0:1]"
-    echo "plot '$1' binary format='%float' using :1 w l t ''"
-    ) > plot/timeline.gpi 
-    gplpdf plot/timeline.gpi > /dev/null
-    size=$(cat $1 | wc -c)
-    let size/=4
-    let size--
-    echo $(date +%T) $size
-    rm timeline.gpi
-}
-test -s $1 && plot $1
-zathura plot/timeline.pdf &
-while true; do
-    while [[ ( $1 -ot plot/timeline.pdf ) || ! -s $1 ]]; do
-        sleep 1 || exit
-    done
-    plot $1
+(
+echo "set yr [0:1]"
+echo "plot '$1' binary format='%float' u :1 w l t ''"
+while sleep 1; do
+    echo "rep"
 done
+) | gnuplot
+# function plot {
+#     ( 
+#     echo "set yr [0:1]"
+#     echo "plot '$1' binary format='%float' using :1 w l t ''"
+#     ) > plot/timeline.gpi 
+#     gplpdf plot/timeline.gpi > /dev/null
+#     size=$(cat $1 | wc -c)
+#     let size/=4
+#     let size--
+#     echo $(date +%T) $size
+#     rm timeline.gpi
+# }
+# test -s $1 && plot $1
+# zathura plot/timeline.pdf &
+# while true; do
+#     while [[ ( $1 -ot plot/timeline.pdf ) || ! -s $1 ]]; do
+#         sleep 1 || exit
+#     done
+#     plot $1
+# done
