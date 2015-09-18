@@ -4,32 +4,31 @@ function plot {
 (
 cat <<'EOF'
 set samples 10000
+set pointsize 0.3
+set bar 0.5
 betac = 0.5*atanh(1/sqrt(2))
+set key at graph 0.98,0.75 r
 set grid
 f(x) = -0.25*log(1-x)
 g(x) = 1-exp(-4*x)
-set xr [0.01:0.99]
-set xr [0.775:0.85]
+set xr [0.001:0.999]
+set xr [0.8:0.85]
+# set xr [0.83:0.835]
 set link x2 via f(x) inverse g(x)
 set xtics nomirror 
 set x2tics
-set label '$\beta$ ' at g(betac),0.058 r
-set label '$1-\mathrm{e}^{-4\beta}$ ' at g(betac),0.002 r
+set label '$\beta$' at graph 0.99,0.97 r
+set label '$1-\mathrm{e}^{-4\beta}$' at graph 0.99,0.09 r
+set arrow from g(betac),0 to g(betac),graph 1 nohead dashtype (5,10) lc 0
 EOF
 if [[ $1 == mag ]]; then
-    echo "set key bottom right"
     echo "set yr [0:1]"
     echo "set label '\$M\$' at graph 0.01,0.96 l"
 elif [[ $1 == chi ]]; then
-    echo "set key at graph 0.98,0.95 r" 
     echo "set yr [0:0.06]"
     echo "set label '\$L^{$pow}\\chi\$' at graph 0.005,0.94 l"
 fi
-cat <<EOF
-p 0 t ''
-set pointsize 0.3
-set bar 0.5
-EOF
+echo "p 0 t ''"
 lc=1
 lt=1
 for i in $(ls -v result)
@@ -37,11 +36,13 @@ do
     test "$(ls result/$i | wc -l )" -gt 2 || continue
     if [[ $1 == mag ]]; then
         echo "rep '< cat result/$i/*' u (g(\$3)):6:7 w e t '$i' lc $lc lt $lt"
+#         echo "rep '' u (g(\$3)):6 smooth cspline t '' lc $lc lt $lt dashtype (5,5)"
     elif [[ $1 == chi ]]; then
         echo "rep '< cat result/$i/*' u (g(\$3)):(\$8*\$2**$pow):(\$9*\$2**$pow) w e t '$i' lc $lc lt $lt"
-        echo "set arrow from g(betac),0 to g(betac),0.06 nohead dashtype (5,10) lc 0"
+#         echo "rep '' u (g(\$3)):(\$8*\$2**$pow) smooth cspline t '' lc $lc lt $lt dashtype (5,5)"
     fi
     let lc++
+    test $lc == 5 && let lc++
     let lt++
 done
 echo "###MAKEPDF font ',8'"

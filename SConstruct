@@ -88,7 +88,7 @@ if os.path.exists('data'):
     for datafile in Glob('data/*/*', strings=True):
         results.append(nc.Command('result'+datafile[4:], 
             [datafile, 'bin/analyze'], 
-            'bin/analyze 100 0.1 $SOURCE > $TARGET'))
+            'bin/analyze 20 0.1 $SOURCE > $TARGET'))
 
 env["ENV"]["PATH"]+= ":~/bin"
 env.Command(["plot/mag.pdf", 'plot/chi.pdf'], ["sc/plot"]+results, "sc/plot")

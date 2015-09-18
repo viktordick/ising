@@ -66,8 +66,6 @@ int main(int argc, char** argv)
     signal(SIGINT, intHandler);
     signal(SIGTERM, intHandler);
 
-
-    srand48(time(NULL));
     std::stringstream s;
     for (int i=1; i<argc; i++)
         s << argv[i] << ' ';
@@ -79,7 +77,17 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    const unsigned seed = time(NULL);
+    time_t rawtime;
+    tm *timeinfo;
+    const unsigned seed = time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    std::cout << std::setfill('0')
+        << std::setw(2) << timeinfo->tm_hour << ':'
+        << std::setw(2) << timeinfo->tm_min << ':'
+        << std::setw(2) << timeinfo->tm_sec << ' '
+        << std::setfill(' ');
+
     run(sig,seed,nmeas);
 };
 

@@ -1,15 +1,16 @@
 #ifndef __ISING_H
 #define __ISING_H
 
-template <class R>
-class Ising {
-    private:
-        Random r;
-        std::vector<Line> dat[2];
-        std::ofstream out;
-        int measured;
-    public:
-        Ising(Random::result_type seed, int nmeas) :r(seed) {
+struct Lattice {
+    Random r;
+    floatT p;
+    std::vector<Line> dat[2];
+    std::ofstream out;
+    int measured;
+
+    Lattice(Random::result_type seed, int nmeas, floatT _p) 
+        :r(seed),p(_p)
+    {
             dat[0].resize(L);
             dat[1].resize(L);
             std::ofstream::openmode m;
@@ -17,7 +18,7 @@ class Ising {
             mkdir("data",0775);
             out_file_name << "data/" << std::setfill('0') << std::setw(3) << L;
             mkdir(out_file_name.str().c_str(), 0775);
-            out_file_name << "/" << std::fixed << std::setprecision(20) << R::p;
+            out_file_name << "/" << std::fixed << std::setprecision(20) << p;
             measured = getFilesize(out_file_name.str().c_str())/sizeof(floatT);
             if (load()) {
                 std::cout << "# Resume "; 
@@ -25,13 +26,15 @@ class Ising {
             } else {
                 std::cout << "#   Init ";
                 m = std::ofstream::trunc;
-                if (R::p < 0.828)
-                    randomize();
+                if (p < 0.828)
+                    for (int eo=0; eo<2; eo++)
+                        for (int x=0; x<L; x++)
+                            dat[eo][x].init_random(r);
             }
             std::cout 
                 << "L=" << L 
-                << ", p=" << std::fixed << R::p
-                << ", beta=" << std::fixed << -0.25*log(1-R::p) 
+                << ", p=" << std::fixed << p
+                << ", beta=" << std::fixed << -0.25*log(1-p) 
                 << ", Nmeas=";
             if (m == std::ofstream::app)
                 std::cout << std::max(nmeas-measured,0) << '/';
@@ -42,17 +45,61 @@ class Ising {
                 std::cerr << "Output file could not be opened!" << std::endl;
                 return;
             }
-            for (; keepRunning && measured<nmeas; measured++) {
+    }
+    void measure() {
+        int count = 0;
+        for (int eo=0; eo<2; eo++)
+            for (int x=0; x<L; x++)
+                count += dat[eo][x].count();
+        float M = fabs(float(count *2)/(L*L)-1);
+        write(out,M);
+    }
+    ~Lattice() {
+        out.close();
+        std::stringstream fname;
+        fname << ".state";
+        mkdir(fname.str().c_str(), 0755);
+        fname << '/' << L;
+        mkdir(fname.str().c_str(), 0755);
+        fname << "/" << std::fixed << std::setprecision(20) << p;
+        std::ofstream f(fname.str().c_str(), std::ofstream::ate);
+        for (int x=0; x<L; x++) 
+            f << dat[0][x] << ' ' << dat[1][x] << std::endl;
+    }
+    bool load() {
+        std::stringstream fname;
+        fname << ".state/" << L << "/" << std::fixed << std::setprecision(20) << p;
+        std::ifstream f(fname.str().c_str());
+        if (f.fail()) {
+            return false;
+        }
+        for (int x=0; x<L; x++) {
+            f >> dat[0][x];
+            f.get();
+            f >> dat[1][x];
+            f.get();
+        }
+        return !f.fail();
+    }
+
+//     friend std::ostream &operator<<(std::ostream &os, const Lattice &lat) {
+//         for (int x=0; x<L; x++)
+//             os << lat.dat[0][x] << ' ' << lat.dat[1][x] << std::endl;
+//         return os;
+//     }
+};
+
+template <class R>
+class Ising {
+    private:
+        Lattice lat;
+    public:
+        Ising(Random::result_type seed, int nmeas) : lat(seed,nmeas,R::p) {
+            for (; keepRunning && lat.measured<nmeas; lat.measured++) {
                 for (int j=0; j<10; j++)
                     sweep();
-                measure();
+                lat.measure();
             }
-
-        }
-        void randomize() {
-            for (int eo=0; eo<2; eo++)
-                for (int x=0; x<L; x++)
-                    dat[eo][x].init_random(r);
         }
         void sweep() {
             for (int eo=0; eo<2; eo++) { //sublattice, 0=even, 1=odd
@@ -63,9 +110,9 @@ class Ising {
                 bool right = eo; 
 
                 for (int x=0; x<L; x++) {
-                    Line &c = dat[eo][x];
-                    const std::vector<Line> &o = dat[1-eo];
-//                     Line *o = dat[1-eo];
+                    Line &c = lat.dat[eo][x];
+                    const std::vector<Line> &o = lat.dat[1-eo];
+                    //                     Line *o = dat[1-eo];
                     //each line represents one neighbor (nb.), with bit set if that neighbor
                     //is antiparallel (a.p.) to c
                     Line n[4] = {
@@ -84,54 +131,13 @@ class Ising {
                     Line c0 = ~c1;
                     c1 &= ~c234;
 
-                    c1.template randomize<R>(r); //we want to flip these bits with some probability
-                    c0.template randomize<R>(r);
-                    c0.template randomize<R>(r); //here the probability is exp(-8beta), so we apply twice
+                    c1.template randomize<R>(lat.r); //we want to flip these bits with some probability
+                    c0.template randomize<R>(lat.r);
+                    c0.template randomize<R>(lat.r); //here the probability is exp(-8beta), so we apply twice
                     c ^= c0|c1|c234;
                     right = !right;
                 }
             }
-        }
-        void measure() {
-            int count = 0;
-            for (int eo=0; eo<2; eo++)
-                for (int x=0; x<L; x++)
-                    count += dat[eo][x].count();
-            float M = fabs(float(count *2)/(L*L)-1);
-            write(out,M);
-        }
-        ~Ising() {
-            out.close();
-            std::stringstream fname;
-            fname << ".state";
-            mkdir(fname.str().c_str(), 0755);
-            fname << '/' << L;
-            mkdir(fname.str().c_str(), 0755);
-            fname << "/" << std::fixed << std::setprecision(20) << R::p;
-            std::ofstream f(fname.str().c_str(), std::ofstream::ate);
-            for (int x=0; x<L; x++) 
-                f << dat[0][x] << ' ' << dat[1][x] << std::endl;
-        }
-        bool load() {
-            std::stringstream fname;
-            fname << ".state/" << L << "/" << std::fixed << std::setprecision(20) << R::p;
-            std::ifstream f(fname.str().c_str());
-            if (f.fail()) {
-                return false;
-            }
-            for (int x=0; x<L; x++) {
-                f >> dat[0][x];
-                f.get();
-                f >> dat[1][x];
-                f.get();
-            }
-            return !f.fail();
-        }
-
-        friend std::ostream &operator<<(std::ostream &os, const Ising &ising) {
-            for (int x=0; x<L; x++)
-                os << ising.dat[0][x] << ' ' << ising.dat[1][x] << std::endl;
-            return os;
         }
 };
 #endif
