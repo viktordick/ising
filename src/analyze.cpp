@@ -40,6 +40,7 @@ floatT sumsqr(const Vector &values) {
 void jackknife(
         Vector &values, 	// Array and number of data points
         int num_blocks,   		// Number of jackknife blocks
+        floatT p,                       // this is 1-exp(-4beta)
         floatT beta, int extent)	// Beta and extent of the lattice
 {
     // Size of jackknife blocks
@@ -114,6 +115,7 @@ void jackknife(
     std::cout << std::fixed<<
         ' ' << std::setw(10) << count << 
         ' ' << std::setw(10) << extent << 
+        ' ' << std::setw(10) << p << 
         ' ' << std::setw(10) << beta << 
         ' ' << std::setw(10) << std_avr_mag << 
         ' ' << std::setw(10) << std_var_mag << 
@@ -190,7 +192,7 @@ int main(int argc, char** argv)
         " values, analysing " << std::setw(7) << count;
     mag.resize(count);
 
-    jackknife( mag, blockcount, beta, extent );
+    jackknife( mag, blockcount, p, beta, extent );
     std::cerr << std::endl;
 }
 
