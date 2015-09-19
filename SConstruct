@@ -57,6 +57,8 @@ else:
 
 if gethostname() == 'gdev1':
     env.Append(CPPDEFINES=['GDEV'])
+else:
+    env.Append(CXXFLAGS=['-std=c++11'])
 try:
     sigs = ARGUMENTS['sigs']
     L = ARGUMENTS['L']

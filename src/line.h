@@ -5,7 +5,19 @@ struct Line { //one line of spin variables on half lattice
     private:
         static const int LH = L/2;
         //use shortest unsigned integer type that has enough bits to hold LH
+#ifndef GDEV
+        typedef unsigned char INT0;
+        typedef unsigned int INT1;
+        typedef unsigned long int INT2;
+        typedef unsigned long long int INT3;
+
+        typedef std::conditional< 8*sizeof(INT0)>=LH, INT0,
+                std::conditional< 8*sizeof(INT1)>=LH, INT1, 
+                std::conditional< 8*sizeof(INT2)>=LH, INT2, 
+                INT3>::type>::type>::type T;
+#else
         typedef uint64_t T;
+#endif
         static const int B = 8*sizeof(T); //how many bits in one element
         static const int N = 1+(LH-1)/B; //how many elements we need for one line
         //constant line where every relevant bit is set
@@ -20,10 +32,10 @@ struct Line { //one line of spin variables on half lattice
         }
         //only keep 'up' bits with probability exp(-beta dE) 
         template<class R>
-        void randomize(Random &r) {
-            for (int i=0; i<N; i++)
-                dat[i] &= R::get(r);
-        }
+            void randomize(Random &r) {
+                for (int i=0; i<N; i++)
+                    dat[i] &= R::get(r);
+            }
         Line() {
             for (int i=0; i<N; i++)
                 dat[i] = 0;
