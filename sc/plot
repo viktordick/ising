@@ -35,10 +35,9 @@ for i in $(ls -v result)
 do
     test "$(ls result/$i | wc -l )" -gt 2 || continue
     if [[ $1 == mag ]]; then
-        echo "rep '< cat result/$i/*' u (g(\$4)):7:8 w e t '$i' lc $lc lt $lt"
-#         echo "rep '' u (g(\$3)):6 smooth cspline t '' lc $lc lt $lt dashtype (5,5)"
+        echo "rep '< cat result/$i/*' u 3:7:8 w e t '$i' lc $lc lt $lt"
     elif [[ $1 == chi ]]; then
-        echo "rep '< cat result/$i/*' u (g(\$4)):(\$9*\$2**$pow):(\$10*\$2**$pow) w e t '$i' lc $lc lt $lt"
+        echo "rep '< cat result/$i/*' u 3:(\$9*\$2**$pow):(\$10*\$2**$pow) w e t '$i' lc $lc lt $lt"
 #         echo "rep '' u (g(\$3)):(\$8*\$2**$pow) smooth cspline t '' lc $lc lt $lt dashtype (5,5)"
     fi
     let lc++
