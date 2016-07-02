@@ -11,9 +11,7 @@ set key at graph 0.98,0.75 r
 set grid
 f(x) = -0.25*log(1-x)
 g(x) = 1-exp(-4*x)
-set xr [0.001:0.999]
-set xr [0.7:0.90]
-# set xr [0.83:0.835]
+set xr [0.75:0.85]
 set link x2 via f(x) inverse g(x)
 set xtics nomirror 
 set x2tics
@@ -38,7 +36,7 @@ do
         echo "rep '< cat result/$i/*' u 3:7:8 w e t '$i' lc $lc lt $lt"
     elif [[ $1 == chi ]]; then
         echo "rep '< cat result/$i/*' u 3:(\$9*\$2**$pow):(\$10*\$2**$pow) w e t '$i' lc $lc lt $lt"
-#         echo "rep '' u (g(\$3)):(\$8*\$2**$pow) smooth cspline t '' lc $lc lt $lt dashtype (5,5)"
+        echo "rep '' u 3:(\$9*\$2**$pow) smooth cspline t '' lc $lc lt $lt dashtype (5,5)"
     fi
     let lc++
     test $lc == 5 && let lc++

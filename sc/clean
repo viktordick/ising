@@ -1,1 +1,2 @@
-rm -r .state data
+scons -c .
+rm -fr .state data/* .h .cache/* bin .obj .sconsign.dblite

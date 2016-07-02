@@ -21,7 +21,7 @@ struct Line { //one line of spin variables on half lattice
         static const int B = 8*sizeof(T); //how many bits in one element
         static const int N = 1+(LH-1)/B; //how many elements we need for one line
         //constant line where every relevant bit is set
-        static const T FullLine = T((~T(0))<<(N*B-LH))>>(N*B-LH);
+        static const T FullLine = T(T(~T(0))<<(N*B-LH))>>(N*B-LH);
         //bit for last column is least significant, i.e. value '1'
         T dat[N];
     public:

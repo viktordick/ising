@@ -16,4 +16,4 @@ scons -j24 bin/ising exe=$exe sigs="$sigs" L=$L || exit
 for sig in $sigs
 do
     echo "bin/ising/$L/$exe $sig $nmeas"
-done | parallelize 3
+done | parallelize 4
