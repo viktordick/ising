@@ -12,6 +12,15 @@
 
 typedef float floatT;
 
+template<typename T>
+int count_population(T v) {
+    int result = 0;
+    for (T mask = T(1); mask; mask <<= 1)
+        if (v & mask)
+            result++;
+    return result;
+}
+
 off_t getFilesize(const char *path){
     struct stat fStat;
     if (!stat(path, &fStat)) 
@@ -87,7 +96,6 @@ int main(int argc, char** argv)
         << std::setw(2) << timeinfo->tm_min << ':'
         << std::setw(2) << timeinfo->tm_sec << ' '
         << std::setfill(' ');
-
     run(sig,seed,nmeas);
 };
 

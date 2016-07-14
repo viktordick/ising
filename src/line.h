@@ -1,6 +1,27 @@
 #ifndef __LINE_H
 #define __LINE_H
 
+// How many bits are set in 0x??
+static const char POPULATION_COUNT[] = {
+    // 1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, //0
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, //1
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, //2
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, //3
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, //4
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, //5
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, //6
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, //7
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, //8
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, //9
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, //A
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, //B
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, //C
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, //D
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, //E
+    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8  //F
+};
+
 struct Line { //one line of spin variables on half lattice
     private:
         static const int LH = L/2;
@@ -114,41 +135,21 @@ struct Line { //one line of spin variables on half lattice
 
         int count() {
             int result = 0;
-            for (int i=0; i<N; i++)
-                for (T mask = T(1); mask; mask <<= 1)
-                    if (dat[i] & mask)
-                        result++;
-            return result;
-        }
-        friend std::ostream &operator<<(std::ostream &os, const Line &l) {
-            for (T mask = T(1)<<((LH-1)%B); mask; mask>>=1)
-                os << ((l.dat[0]&mask)?'1':'0');
-            for (int i=1; i<N; i++)
-                for (T mask = T(1)<<(B-1); mask; mask>>=1)
-                    os << ((l.dat[i]&mask)?'1':'0');
-            return os;
-        };
-        friend std::istream &operator>>(std::istream &is, Line &l) {
-            char c;
-            l.dat[0] = 0;
-            for (int j=0; j<=(LH-1)%B; j++) {
-                is.get(c);
-                l.dat[0] <<= 1;
-                if (c=='1')
-                    l.dat[0] |= 1;
-            }
-            for (int i=1; i<N; i++) {
-                l.dat[i] = 0;
-                for (int j=0; j<B; j++) {
-                    is.get(c);
-                    l.dat[i] <<= 1;
-                    if (c=='1')
-                        l.dat[i] |= 1;
+            for (int i=0; i<N; i++) {
+                T v = dat[i];
+                for (int j=0; 8*j<LH; j++) {
+                    result += POPULATION_COUNT[v & 0xff];
+                    v >>= 8;
                 }
             }
-            return is;
+            return result;
         }
-
+        void read(std::istream &f) {
+            f.read((char*)&dat[0],N*sizeof(T));
+        }
+        void write(std::ostream &f) const {
+            f.write((char*)&dat[0],N*sizeof(T));
+        }
 };
 
 #endif

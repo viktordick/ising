@@ -1,6 +1,7 @@
 #ifndef __ISING_H
 #define __ISING_H
 
+const int SWEEP_PER_MEAS = 0x100;
 struct Lattice {
     Random r;
     floatT p;
@@ -63,8 +64,9 @@ struct Lattice {
         mkdir(fname.str().c_str(), 0755);
         fname << "/" << std::fixed << std::setprecision(20) << p;
         std::ofstream f(fname.str().c_str(), std::ofstream::ate);
-        for (int x=0; x<L; x++) 
-            f << dat[0][x] << ' ' << dat[1][x] << std::endl;
+        for (int eo=0; eo<2; eo++)
+            for (int x=0; x<L; x++)
+                dat[eo][x].write(f);
     }
     bool load() {
         std::stringstream fname;
@@ -73,20 +75,12 @@ struct Lattice {
         if (f.fail()) {
             return false;
         }
-        for (int x=0; x<L; x++) {
-            f >> dat[0][x];
-            f.get();
-            f >> dat[1][x];
-            f.get();
-        }
+        for (int eo=0; eo<2; eo++)
+            for (int x=0; x<L; x++)
+                dat[eo][x].read(f);
         return !f.fail();
     }
 
-//     friend std::ostream &operator<<(std::ostream &os, const Lattice &lat) {
-//         for (int x=0; x<L; x++)
-//             os << lat.dat[0][x] << ' ' << lat.dat[1][x] << std::endl;
-//         return os;
-//     }
 };
 
 template <class R>
@@ -96,7 +90,7 @@ class Ising {
     public:
         Ising(Random::result_type seed, int nmeas) : lat(seed,nmeas,R::p) {
             for (; keepRunning && lat.measured<nmeas; lat.measured++) {
-                for (int j=0; j<10; j++)
+                for (int j=0; j<SWEEP_PER_MEAS; j++)
                     sweep();
                 lat.measure();
             }

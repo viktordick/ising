@@ -11,7 +11,9 @@ set key at graph 0.98,0.75 r
 set grid
 f(x) = -0.25*log(1-x)
 g(x) = 1-exp(-4*x)
-set xr [0.75:0.85]
+set xr [0:0.99]
+set xr [0.69:0.91]
+set xr [0.80:0.85]
 set link x2 via f(x) inverse g(x)
 set xtics nomirror 
 set x2tics
@@ -31,15 +33,15 @@ lc=1
 lt=1
 for i in $(ls -v result)
 do
-    test "$(ls result/$i | wc -l )" -gt 2 || continue
+    [[ "$(ls result/$i | wc -l )" -gt 2 ]] || continue
     if [[ $1 == mag ]]; then
         echo "rep '< cat result/$i/*' u 3:7:8 w e t '$i' lc $lc lt $lt"
     elif [[ $1 == chi ]]; then
         echo "rep '< cat result/$i/*' u 3:(\$9*\$2**$pow):(\$10*\$2**$pow) w e t '$i' lc $lc lt $lt"
-        echo "rep '' u 3:(\$9*\$2**$pow) smooth cspline t '' lc $lc lt $lt dashtype (5,5)"
+#         echo "rep '' u 3:(\$9*\$2**$pow) smooth cspline t '' lc $lc lt $lt dashtype (5,5)"
     fi
     let lc++
-    test $lc == 5 && let lc++
+    [[ $lc == 5 ]] && let lc++
     let lt++
 done
 echo "###MAKEPDF font ',8'"
