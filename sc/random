@@ -18,7 +18,6 @@ sigs = argv[1:]
 
 for sig in sigs:
     print("""struct Random_{} {{
-    static const double p;
     static Random::result_type get(Random &r) {{
         Random::result_type result = r();""".format(sig))
     for bit in reversed(sig[:-1]):
@@ -26,12 +25,11 @@ for sig in sigs:
     print("""        return result;
     }}
 }};
-const double Random_{}::p = {};
-""".format(sig,p(sig)))
+""".format(sig,sig))
 
 print("void run(std::string sig, Random::result_type seed, int nmeas) { ")
 for sig in sigs:
     print("""
     if (sig == "{0}") 
-        Ising<Random_{0}>(seed, nmeas);""".format(sig))
+        Ising<Random_{0}>(sig,seed, nmeas);""".format(sig))
 print("}")

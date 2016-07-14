@@ -126,6 +126,16 @@ void jackknife(
 }
 
 
+floatT get_p(std::string sig) {
+    floatT result = 0;
+    floatT val = 1;
+    for (int i=0; i<sig.size(); i++) {
+        val /= 2;
+        if (sig[i] == '1')
+            result += val;
+    }
+    return result;
+}
 
 //! Run the analysis on a beta value. This reads in the file
 //! and calls the jackknife analysis on an array of magnetization
@@ -143,7 +153,7 @@ int main(int argc, char** argv)
     std::string filename = argv[3];
 
     fs::path path(filename);
-    const floatT p = atof(path.filename().c_str());
+    const floatT p = get_p(path.filename().c_str());
     const floatT beta = -0.25*log(1-p);
     const int extent = atoi(path.parent_path().filename().c_str());
 

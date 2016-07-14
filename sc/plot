@@ -11,9 +11,9 @@ set key at graph 0.98,0.75 r
 set grid
 f(x) = -0.25*log(1-x)
 g(x) = 1-exp(-4*x)
-set xr [0:0.99]
-set xr [0.69:0.91]
-set xr [0.80:0.85]
+# set xr [0:0.99]
+# set xr [0.69:0.91]
+set xr [0.75:0.85]
 set link x2 via f(x) inverse g(x)
 set xtics nomirror 
 set x2tics
