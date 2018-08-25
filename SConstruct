@@ -56,7 +56,7 @@ else:
     Exit()
 
 if gethostname() == 'gdev1':
-    env.Append(CPPDEFINES=['GDEV'])
+    env.Append(CPPDEFINES=['NOCPP11'])
 else:
     env.Append(CXXFLAGS=['-std=c++11'])
 try:

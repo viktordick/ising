@@ -22,11 +22,24 @@ static const char POPULATION_COUNT[] = {
     4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8  //F
 };
 
+/** One Line of a 2D Ising Sublattice (even or odd)
+ *
+ * The Lattice size L is given by the call to the compiler (it is set as
+ * CPPDEFINES in SConstruct).
+ *
+ * It holds an array of unsigned integer types (between char and long long int,
+ * depending on the lattice size) and provides all needed bit-wise operations.
+ */
 struct Line { //one line of spin variables on half lattice
     private:
         static const int LH = L/2;
+#ifdef NOCPP11
+        // without std::conditional, we can not easily decide this at compile
+        // time, so we just take a fixed type at some minor performance cost
+        // for small lattices.
+        typedef uint64_t T;
+#else
         //use shortest unsigned integer type that has enough bits to hold LH
-#ifndef GDEV
         typedef unsigned char INT0;
         typedef unsigned int INT1;
         typedef unsigned long int INT2;
@@ -36,8 +49,6 @@ struct Line { //one line of spin variables on half lattice
                 std::conditional< 8*sizeof(INT1)>=LH, INT1, 
                 std::conditional< 8*sizeof(INT2)>=LH, INT2, 
                 INT3>::type>::type>::type T;
-#else
-        typedef uint64_t T;
 #endif
         static const int B = 8*sizeof(T); //how many bits in one element
         static const int N = 1+(LH-1)/B; //how many elements we need for one line
@@ -46,12 +57,18 @@ struct Line { //one line of spin variables on half lattice
         //bit for last column is least significant, i.e. value '1'
         T dat[N];
     public:
+        /** initialize randomly (probability 0.5 for each bit)
+         */
         void init_random(Random &r) {
             for (int i=0; i<N; i++)
                 dat[i] = r();
             dat[0] &= FullLine;
         }
-        //only keep 'up' bits with probability exp(-beta dE) 
+        /** only keep 'up' bits if the random source provides a 1 at the given
+         * bit. r is a random number generator providing bits set with
+         * probability 0.5, R uses these to compute bits set with probability
+         * exp(-4beta).
+         */
         template<class R>
             void randomize(Random &r) {
                 for (int i=0; i<N; i++)
@@ -133,6 +150,8 @@ struct Line { //one line of spin variables on half lattice
             return right?shift_right():shift_left();
         }
 
+        /** count the number of set bits
+         */
         int count() {
             int result = 0;
             for (int i=0; i<N; i++) {

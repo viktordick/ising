@@ -2,6 +2,19 @@
 #define __ISING_H
 
 const int SWEEP_PER_MEAS = 0x10;
+
+/** The 2D Ising lattice
+ * It contains a random number generator and an even and an odd sublattice,
+ * which each consist of Lines of data.
+ *
+ * All code that is not dependent on the flip probability (i.e., beta), is
+ * collected in the struct Lattice. The part that can benefit by the compiler
+ * already knowing which probability is going to be used is put into the
+ * template Ising.
+ * This separation is done to reduce compile time without impacting run time.
+ * All code in Ising is built separately for each given probability, with all
+ * optimizations the compiler can perform. Code in Lattice is only built once.
+ */
 struct Lattice {
     Random r;
     std::string sig;
@@ -9,6 +22,11 @@ struct Lattice {
     std::ofstream out;
     int measured;
 
+    /** Initialize Lattice. 
+     * Load last state from file if found, otherwise set to either zero or
+     * random, depending on the signature and therefore on beta (hot or cold
+     * start).
+     */
     Lattice(std::string _sig, Random::result_type seed, int nmeas) 
         :r(seed),sig(_sig)
     {
@@ -58,6 +76,8 @@ struct Lattice {
             return;
         }
     }
+    /** Measure magnetization as float value and write (binary!) to output file.
+     */
     void measure() {
         int count = 0;
         for (int eo=0; eo<2; eo++)
@@ -66,6 +86,9 @@ struct Lattice {
         float M = fabs(float(count *2)/(L*L)-1);
         write(out,M);
     }
+
+    /** Destructor. Store the current state into .state/<L>/<sig>
+     */
     ~Lattice() {
         out.close();
         std::stringstream fname;
@@ -79,6 +102,9 @@ struct Lattice {
             for (int x=0; x<L; x++)
                 dat[eo][x].write(f);
     }
+    /** Load the state that was last used when running this
+     * signature/prob./beta value on this lattice size.
+     */
     bool load() {
         std::stringstream fname;
         fname << ".state/" << L << "/" << sig;
@@ -94,11 +120,21 @@ struct Lattice {
 
 };
 
+/** The Ising template.
+ * As a template argument, it takes a Random struct that provides the method
+ * get(). This method should return a bit pattern where each bit is set with a
+ * given probability.
+ *
+ * The code collected here can benefit from the compiler already knowing the
+ * probability and therefore which bitwise and/or operations are performed on
+ * the raw random numbers by R::get().
+ */
 template <class R>
 class Ising {
     private:
         Lattice lat;
     public:
+        /** Initialize and run */
         Ising(std::string sig, Random::result_type seed, int nmeas) : lat(sig,seed,nmeas) {
             for (; keepRunning && lat.measured<nmeas; lat.measured++) {
                 for (int j=0; j<SWEEP_PER_MEAS; j++)
@@ -106,6 +142,25 @@ class Ising {
                 lat.measure();
             }
         }
+        /** Do one sweep of the lattice.
+         * For the even and odd sublattices, iterate through Lines and
+         * 1) collect Lines that represent neighbors, each XORed with the
+         *    current Line so each 1 means an antiparallel neighbor
+         * 2) Create Lines c234, c1 and c0, which have a 1 in each bit if
+         *    - at least two neighbors are antiparallel
+         *    - exactly one neighbor is antiparallel
+         *    - no neighbor is antiparallel
+         * 3) Flip the ones of c0 and c1 with some probabilities depending on
+         *    beta (exp(-4beta) for c1, exp(-8beta) for c0). 
+         * 4) Join c0, c1 and c234 by OR, so we obtain a Line where the bits
+         *    are set if the corresponding bit in the original Line should be
+         *    flipped (either there are more than two antiparallel neighbors or
+         *    there is one antiparallel neighbor and an event with probability
+         *    exp(-4beta) occured or there is no antiparallel neighbor and an
+         *    event with probability exp(-8beta) occured).
+         * 5) Flip all bits of the current Line where the result of 4) has a
+         *    set bit.
+         */
         void sweep() {
             for (int eo=0; eo<2; eo++) { //sublattice, 0=even, 1=odd
 
