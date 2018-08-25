@@ -38,7 +38,7 @@ floatT sumsqr(const Vector &values) {
 //! routines in this programm are just code to read in data, etc., so this is the
 //! interesting one you might want to read:
 void jackknife(
-        Vector &values, 	// Array and number of data points
+        Vector &values, 	        // Array and number of data points
         int num_blocks,   		// Number of jackknife blocks
         floatT p,                       // this is 1-exp(-4beta)
         floatT beta, int extent)	// Beta and extent of the lattice
@@ -95,7 +95,6 @@ void jackknife(
     // Do a standard average and variance on the pseudo jackknife values for both
     // the average/magnetisation and the variance/susceptibility:
 
-//     double res_mag_avr=0, res_mag_var=0, res_sus_avr=0, res_sus_var=0;
 
     // Averages
     const floatT res_mag_avr = sum(Ji_avr_mag)/num_blocks;
@@ -110,7 +109,7 @@ void jackknife(
     res_sus_var *= sqr(extent*extent*beta);
 
 
-    // Data is outputted to file
+    // Data is written to file
     
     std::cout << std::fixed<<
         ' ' << std::setw(10) << count << 
@@ -139,9 +138,8 @@ floatT get_p(std::string sig) {
 
 //! Run the analysis on a beta value. This reads in the file
 //! and calls the jackknife analysis on an array of magnetization
-//! values. It takes the file, size of JK blocks, the lattice
-//! extent and the number of thermalisation steps as parameters
-// void analyse_beta(std::ofstream &out, std::string filename, int blocksize, int extent, int therm) 
+//! values. It takes the file, number of JK blocks, the lattice
+//! extent and the ratio of steps discarded for thermalisation as parameters
 int main(int argc, char** argv)
 { 
     if (argc != 4) {

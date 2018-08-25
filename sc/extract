@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-from os import listdir
-from subprocess import Popen, PIPE, DEVNULL
+import os, subprocess
 
-for L in sorted(listdir('result')):
+for L in sorted(os.listdir('result')):
     data = []
     chi = 0
     beta = 0
-    for f in sorted(listdir('result/'+L)):
+    for f in sorted(os.listdir('result/'+L)):
         line = open('result/{}/{}'.format(L,f)).read().split()
         if len(line) < 10:
             continue
@@ -23,8 +22,11 @@ for L in sorted(listdir('result')):
             l = d[0]
         if d[1] > chi/2:
             r = d[0]
-#     print(l,r,beta,chi)
-    gnuplot = Popen("gnuplot", stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    gnuplot = subprocess.Popen("gnuplot", 
+                               stdin=subprocess.PIPE, 
+                               stdout=subprocess.PIPE, 
+                               stderr=subprocess.PIPE, 
+                               universal_newlines=True)
     (out,err) = gnuplot.communicate("""
             l = {l}
             r = {r}

@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+'''
+Compute all bit signatures with a given maximum number of bits between two
+given values.
+
+This helper script takes an interval of floating point numbers between 0 and 1
+and computes all floating point numbers in this interval which can be
+represented by a given number of bits after the decimal point within that interval.
+
+So, if the parameters '0.0 1.0 2' are given, the numbers 1/4, 1/2 and 3/4 are
+computed, which in binary are 0.01, 0.1 and 0.11. Zero is always excluded.
+
+The output is just a list of the binary representations of these numbers,
+omitting the part before the decimal point (so 01 1 11).
+'''
 
 from sys import argv,exit
 

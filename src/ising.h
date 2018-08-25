@@ -1,7 +1,7 @@
 #ifndef __ISING_H
 #define __ISING_H
 
-const int SWEEP_PER_MEAS = 0x100;
+const int SWEEP_PER_MEAS = 0x10;
 struct Lattice {
     Random r;
     std::string sig;

@@ -2,6 +2,6 @@
 
 while true
 do
-    scons -s -j20 result
-    sleep 10 || break
+    scons -s plot
+    sleep 1 || break
 done

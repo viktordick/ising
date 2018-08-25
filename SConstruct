@@ -60,14 +60,15 @@ if gethostname() == 'gdev1':
 else:
     env.Append(CXXFLAGS=['-std=c++11'])
 try:
-    sigs = ARGUMENTS['sigs']
+    pmin = ARGUMENTS['pmin']
+    pmax = ARGUMENTS['pmax']
+    bits = ARGUMENTS['bits']
     L = ARGUMENTS['L']
-    exe = ARGUMENTS.get('exe','ising')
+    exe = '{}-{}-{}'.format(pmin, pmax, bits)
     env.Append(CPPDEFINES={'L': L})
-    sigs = ' '.join(sigs.split())
 
     inc=".h/{0}".format(exe)
-    h = env.Command(inc+"/random.h", "sc/random", "sc/random {0} > $TARGET".format(sigs))
+    h = env.Command(inc+"/random.h", "sc/random", "sc/bitrange {} {} {} | sc/random > $TARGET".format(pmin, pmax, bits))
     o = env.Object("{0}/ising/{1}/{2}.o".format(objdir, L, exe),
         objdir+"/ising.cpp", CPPPATH=inc)
     env.Depends(o,h)
@@ -90,7 +91,7 @@ if os.path.exists('data'):
     for datafile in Glob('data/*/*', strings=True):
         results.append(nc.Command('result'+datafile[4:], 
             [datafile, 'bin/analyze'], 
-            'bin/analyze 20 0.1 $SOURCE > $TARGET'))
+            'bin/analyze 100 0.01 $SOURCE > $TARGET'))
 
 env["ENV"]["PATH"]+= ":~/bin"
 env.Command(["plot/mag.pdf", 'plot/chi.pdf'], ["sc/plot"]+results, "sc/plot")

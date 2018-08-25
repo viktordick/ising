@@ -11,9 +11,9 @@ nmeas=$5
 
 sigs=$(sc/bitrange $pmin $pmax $bits)
 exe=$pmin-$pmax-$bits
-scons -j24 bin/ising exe=$exe sigs="$sigs" L=$L || exit
+scons -j24 bin/ising pmin=$pmin pmax=$pmax bits=$bits L=$L || exit
 
 for sig in $sigs
 do
     echo "bin/ising/$L/$exe $sig $nmeas"
-done | parallelize 4
+done | parallelize 7

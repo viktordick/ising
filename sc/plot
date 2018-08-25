@@ -4,16 +4,16 @@ function plot {
 (
 cat <<'EOF'
 set samples 10000
-set pointsize 0.3
-set bar 0.5
+set pointsize 0.2
+set bar 0.2
 betac = 0.5*atanh(1/sqrt(2))
 set key at graph 0.98,0.75 r
 set grid
 f(x) = -0.25*log(1-x)
 g(x) = 1-exp(-4*x)
-# set xr [0:0.99]
+set xr [0:0.99]
 # set xr [0.69:0.91]
-set xr [0.75:0.85]
+# set xr [0.75:0.85]
 set link x2 via f(x) inverse g(x)
 set xtics nomirror 
 set x2tics
@@ -37,7 +37,7 @@ do
     if [[ $1 == mag ]]; then
         echo "rep '< cat result/$i/*' u 3:7:8 w e t '$i' lc $lc lt $lt"
     elif [[ $1 == chi ]]; then
-        echo "rep '< cat result/$i/*' u 3:(\$9*\$2**$pow):(\$10*\$2**$pow) w e t '$i' lc $lc lt $lt"
+        echo "rep '< cat result/$i/*' u 3:(\$9*\$2**$pow):(\$10*\$2**$pow) w e t '$i' lc $lc lt 1"
 #         echo "rep '' u 3:(\$9*\$2**$pow) smooth cspline t '' lc $lc lt $lt dashtype (5,5)"
     fi
     let lc++
