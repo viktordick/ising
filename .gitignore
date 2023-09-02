@@ -1,4 +1,7 @@
+data
 target
 Cargo.lock
 src/generated.rs
 bin
+*.o
+*.sconsign.dblite

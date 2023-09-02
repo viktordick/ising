@@ -1,14 +1,14 @@
 mod rnd;
 mod generated;
 
-use std::fmt;
+use std::io::{stdout,Write};
+use std::env::args;
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
 
 use crate::generated::{rand_p,N};
 
-const L: usize =  N*128;
-const LH: usize = L/2;
+const L: usize = N*256;
 
 #[derive(Clone, Copy)]
 struct Line {
@@ -58,35 +58,23 @@ impl Line {
     }
 }
 
-impl fmt::Debug for Line {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for i in 0..N {
-            for b in 0..128 {
-                let mask = 1 << (127-b);
-                write!(f, "{}", if (self.c[i] & mask) != 0 {"1"} else {"0"})?;
-            }
-        }
-        Ok(())
-    }
-}
-
 struct HalfLattice {
     odd: bool,
-    row: [Line; LH],
+    row: [Line; L],
 }
 
 impl HalfLattice {
     fn new(odd: bool) -> Self {
         let line = Line::new();
-        Self {odd: odd, row: [line; LH]}
+        Self {odd: odd, row: [line; L]}
     }
 
     fn update(&mut self, r: &mut SmallRng, other: &HalfLattice) {
-        for row in 0..LH {
+        for row in 0..L {
             let nb = [
-                other.row[(row+LH-1)%LH],
+                other.row[(row+L-1)%L],
                 other.row[row].shift(self.odd),
-                other.row[(row+1)%LH],
+                other.row[(row+1)%L],
                 other.row[row],
             ];
             self.row[row].update(r, nb);
@@ -95,7 +83,7 @@ impl HalfLattice {
 
     fn mag(&self) -> u32 {
         let mut result = 0;
-        for i in 0..LH {
+        for i in 0..L {
             for j in 0..N {
                 result += self.row[i].c[j].count_ones()
             }
@@ -105,14 +93,20 @@ impl HalfLattice {
 }
 
 fn main() {
+    let mut args = args();
+    let _ = args.next();
+    let nmeas: usize = args.next().unwrap().parse().unwrap();
     let mut rng = SmallRng::from_entropy();
     let mut even = HalfLattice::new(false);
     let mut odd = HalfLattice::new(true);
-    for _ in 0..100_000 {
+    let mut stdout = stdout();
+    for _ in 0..nmeas {
         for _ in 0..16 {
             even.update(&mut rng, &odd);
             odd.update(&mut rng, &even);
         }
-        let _ = even.mag() + odd.mag();
+        let mag = even.mag() + odd.mag();
+        //println!("{mag}");
+        stdout.write_all(&mag.to_ne_bytes()).unwrap();
     }
 }
