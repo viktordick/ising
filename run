@@ -14,14 +14,16 @@ import os
 import sys
 import subprocess
 
-if (len(sys.argv) != 5):
-    print(sys.argv[0], "L pmin pmax maxbits")
+if (len(sys.argv) != 6):
+    print(sys.argv[0], "N pmin pmax maxbits nmeas")
     sys.exit()
 
-L = int(sys.argv[1])
+N = int(sys.argv[1])
+L = 256*N
 pmin = max(0, float(sys.argv[2]))
 pmax = min(1, float(sys.argv[3]))
 maxbits = int(sys.argv[4])
+nmeas = int(sys.argv[5])
 
 
 class bitfield:
@@ -76,6 +78,8 @@ pub fn rand_p(r: &mut SmallRng) -> u128 {{
 }}
 """
 
+commands = []
+
 b.inc()
 while b.p < pmax:
     print(b)
@@ -84,9 +88,17 @@ while b.p < pmax:
         op = '|&'[bit]
         lines.append(f'    res {op}= rng(r);')
     with open('src/generated.rs', 'w') as f:
-        print(code.format(L, '\n'.join(lines)), file=f)
+        print(code.format(N, '\n'.join(lines)), file=f)
     subprocess.run(['cargo', 'build', '--release'], check=True)
     os.makedirs(f'bin/{L}', exist_ok=True)
     os.rename('target/release/ising', f'bin/{L}/{b}')
+    commands.append(f'bin/{L}/{b} {nmeas} > data/{L}/{b}; echo {b}')
 
     b.inc()
+
+subprocess.run(
+    ['parallel', 'sh', '-c'],
+    input='\n'.join(commands),
+    text=True,
+    check=True,
+)

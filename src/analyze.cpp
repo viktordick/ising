@@ -11,7 +11,7 @@
 namespace fs = boost::filesystem;
 
 typedef double floatT;
-typedef float floatTdisk;
+typedef unsigned int floatTdisk;
 typedef std::vector<floatT> Vector;
 
 template<class T>
@@ -187,7 +187,7 @@ int main(int argc, char** argv)
         f.read((char*)&value, sizeof(value));
         if (f.eof())
             break;
-        mag.push_back(value);
+        mag.push_back(float(value)/(extent*extent));
     }
     const int skip = mag.size()*therm;
     const int count = ((mag.size()-skip)/blockcount)*blockcount;
