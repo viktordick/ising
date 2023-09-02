@@ -55,10 +55,6 @@ else:
     print("cxx argument not recognized.")
     Exit()
 
-if gethostname() == 'gdev1':
-    env.Append(CPPDEFINES=['NOCPP11'])
-else:
-    env.Append(CXXFLAGS=['-std=c++11'])
 try:
     pmin = ARGUMENTS['pmin']
     pmax = ARGUMENTS['pmax']
