@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+'''
+Build binaries for given lattize size and probabilities.
+
+Takes an interval of floating point numbers between 0 and 1 and computes all
+floating point numbers in this interval which can be represented by a given
+number of bits after the decimal point within that interval.
+
+So, if the parameters '0.0 1.0 2' are given, the numbers 1/4, 1/2 and 3/4 are
+computed, which in binary are 0.01, 0.1 and 0.11. Zero is always excluded.
+'''
+
+import os
+import sys
+import subprocess
+
+if (len(sys.argv) != 5):
+    print(sys.argv[0], "L pmin pmax maxbits")
+    sys.exit()
+
+L = int(sys.argv[1])
+pmin = max(0, float(sys.argv[2]))
+pmax = min(1, float(sys.argv[3]))
+maxbits = int(sys.argv[4])
+
+
+class bitfield:
+
+    def __init__(self):
+        self.p = 0
+        self.bits = []
+        self.lsb = 1  # value of least significant bit
+
+    def append(self, border):
+        """add another bit such that the value is still below border"""
+        self.lsb /= 2.0
+        if self.p + self.lsb < border:
+            val = 1
+            self.p += self.lsb
+        else:
+            val = 0
+        self.bits = [val] + self.bits
+
+    def inc(self):
+        self.p += 2**(-len(self.bits))
+        for i in range(len(self.bits)):
+            if self.bits[i] == 0:
+                self.bits[i] = 1
+                break
+            else:
+                self.bits[i] = 0
+
+    def __repr__(self):
+        s = ''
+        for i in self.bits:
+            if s == '' and i == 0:
+                continue
+            s = str(i) + s
+        return s
+
+
+b = bitfield()
+inc = 1
+for i in range(maxbits):
+    b.append(pmin)
+
+code = """
+use crate::rnd::{{SmallRng,rng}};
+
+pub const N: usize = {};
+
+pub fn rand_p(r: &mut SmallRng) -> u128 {{
+    let mut res = rng(r);
+{}
+    res
+}}
+"""
+
+b.inc()
+while b.p < pmax:
+    print(b)
+    lines = []
+    for bit in reversed(b.bits[:-1]):
+        op = '|&'[bit]
+        lines.append(f'    res {op}= rng(r);')
+    with open('src/generated.rs', 'w') as f:
+        print(code.format(L, '\n'.join(lines)), file=f)
+    subprocess.run(['cargo', 'build', '--release'], check=True)
+    os.makedirs(f'bin/{L}', exist_ok=True)
+    os.rename('target/release/ising', f'bin/{L}/{b}')
+
+    b.inc()

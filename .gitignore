@@ -1,2 +1,4 @@
-plot
-.fits.dat
+target
+Cargo.lock
+src/generated.rs
+bin

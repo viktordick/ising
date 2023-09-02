@@ -1,7 +1,0 @@
-#!/bin/bash
-
-while true
-do
-    scons -s plot
-    sleep 1 || break
-done
