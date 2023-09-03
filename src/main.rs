@@ -1,8 +1,10 @@
 mod rnd;
 mod generated;
 
-use std::io::{stdout,Write};
+use std::io::{stdout, Write, Error};
 use std::env::args;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
 
@@ -92,21 +94,53 @@ impl HalfLattice {
     }
 }
 
-fn main() {
+struct Ising {
+    even: HalfLattice,
+    odd: HalfLattice,
+    rng: SmallRng,
+    terminating: Arc<AtomicBool>,
+}
+
+impl Ising {
+    fn new() -> Result<Ising, Error> {
+        let terminating = Arc::new(AtomicBool::new(false));
+        signal_hook::flag::register_conditional_shutdown(
+            signal_hook::consts::SIGINT,
+            1,
+            Arc::clone(&terminating)
+        )?;
+        let _ = signal_hook::flag::register(
+            signal_hook::consts::SIGINT,
+            Arc::clone(&terminating)
+        );
+        Ok(Ising {
+            even: HalfLattice::new(false),
+            odd: HalfLattice::new(true),
+            rng: SmallRng::from_entropy(),
+            terminating: terminating,
+        })
+    }
+    fn run(&mut self, nmeas: usize) {
+        for _ in 0..nmeas {
+            for _ in 0..16 {
+                self.even.update(&mut self.rng, &self.odd);
+                self.odd.update(&mut self.rng, &self.even);
+            }
+            let mag = self.even.mag() + self.odd.mag();
+            stdout().write_all(&mag.to_ne_bytes()).unwrap();
+            if self.terminating.load(Ordering::Relaxed) {
+                break;
+            }
+        }
+
+    }
+}
+
+fn main() -> Result<(), Error> {
     let mut args = args();
     let _ = args.next();
     let nmeas: usize = args.next().unwrap().parse().unwrap();
-    let mut rng = SmallRng::from_entropy();
-    let mut even = HalfLattice::new(false);
-    let mut odd = HalfLattice::new(true);
-    let mut stdout = stdout();
-    for _ in 0..nmeas {
-        for _ in 0..16 {
-            even.update(&mut rng, &odd);
-            odd.update(&mut rng, &even);
-        }
-        let mag = even.mag() + odd.mag();
-        //println!("{mag}");
-        stdout.write_all(&mag.to_ne_bytes()).unwrap();
-    }
+    let mut ising = Ising::new()?;
+    ising.run(nmeas);
+    Ok(())
 }

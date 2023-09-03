@@ -3,6 +3,9 @@ name = "ising"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+signal-hook = "0.3.17"
+
 [dependencies.rand]
 version = "0.8.5"
 default-features = false
