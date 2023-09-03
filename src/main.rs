@@ -127,6 +127,7 @@ impl Ising {
                 self.odd.update(&mut self.rng, &self.even);
             }
             let mag = self.even.mag() + self.odd.mag();
+            let mag = (((2*mag) as f32)/((L*L) as f32)-1.0).abs();
             stdout().write_all(&mag.to_ne_bytes()).unwrap();
             if self.terminating.load(Ordering::Relaxed) {
                 break;
