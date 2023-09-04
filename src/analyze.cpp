@@ -142,25 +142,12 @@ floatT get_p(std::string sig) {
 //! extent and the ratio of steps discarded for thermalisation as parameters
 int main(int argc, char** argv)
 { 
-    if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " blockcount therm filename" << std::endl;
+    if (argc < 4) {
+        std::cerr << "Usage: " << argv[0] << " blockcount therm filename ..." << std::endl;
         return 1;
     }
     int blockcount = atoi(argv[1]);
     float therm = atof(argv[2]);
-    std::string filename = argv[3];
-
-    fs::path path(filename);
-    const floatT p = get_p(path.filename().c_str());
-    const floatT beta = -0.25*log(1-p);
-    const int extent = atoi(path.parent_path().filename().c_str());
-
-
-    //some checks
-    if ((extent<=0)||(extent%2)) {
-        std::cerr << "# Extent is not positive and even" << std::endl;
-        return -1;
-    }
 
     if ((therm<0)||(therm>1)) {
         std::cerr << "# percentage of thermalisation should be >0, <1, is " << therm << std::endl;
@@ -170,37 +157,54 @@ int main(int argc, char** argv)
         std::cerr << "# JK-blockcount shoud be > 0, is " <<  blockcount << std::endl;
         return -1;
     }
-    // Open file
-    std::ifstream f(filename.c_str());
+
+    for (int i=3; i<argc; i++) {
+        std::string filename = argv[i];
+
+        fs::path path(filename);
+        const floatT p = get_p(path.filename().c_str());
+        const floatT beta = -0.25*log(1-p);
+        const int extent = atoi(path.parent_path().filename().c_str());
 
 
-    // magnetization values
-    Vector mag;
+        //some checks
+        if ((extent<=0)||(extent%2)) {
+            std::cerr << "# Extent is not positive and even" << std::endl;
+            return -1;
+        }
 
-    // check for file open error
-    if (f.fail()) {
-        std::cerr << "# Opening file " << filename << " failed!" << std::endl;
-        return 1; 
+        // Open file
+        std::ifstream f(filename.c_str());
+
+
+        // magnetization values
+        Vector mag;
+
+        // check for file open error
+        if (f.fail()) {
+            std::cerr << "# Opening file " << filename << " failed!" << std::endl;
+            return 1; 
+        }
+        while (true) {
+            floatTdisk value;
+            f.read((char*)&value, sizeof(value));
+            if (f.eof())
+                break;
+            mag.push_back(value);
+        }
+        const int skip = mag.size()*therm;
+        const int count = ((mag.size()-skip)/blockcount)*blockcount;
+        for (int i=0; i<count; i++)
+            mag[i] = mag[i+skip];
+
+        // Run analysis
+        std::cerr << "# At beta " << std::fixed << beta << 
+            ": read in " << std::setw(7) << mag.size() << 
+            " values, analysing " << std::setw(7) << count;
+        mag.resize(count);
+
+        jackknife( mag, blockcount, p, beta, extent );
+        std::cerr << std::endl;
     }
-    while (true) {
-        floatTdisk value;
-        f.read((char*)&value, sizeof(value));
-        if (f.eof())
-            break;
-        mag.push_back(value);
-    }
-    const int skip = mag.size()*therm;
-    const int count = ((mag.size()-skip)/blockcount)*blockcount;
-    for (int i=0; i<count; i++)
-        mag[i] = mag[i+skip];
-
-    // Run analysis
-    std::cerr << "# At beta " << std::fixed << beta << 
-        ": read in " << std::setw(7) << mag.size() << 
-        " values, analysing " << std::setw(7) << count;
-    mag.resize(count);
-
-    jackknife( mag, blockcount, p, beta, extent );
-    std::cerr << std::endl;
 }
 
