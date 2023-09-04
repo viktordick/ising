@@ -13,6 +13,8 @@ computed, which in binary are 0.01, 0.1 and 0.11. Zero is always excluded.
 import os
 import sys
 import subprocess
+import queue
+import threading
 
 if (len(sys.argv) != 6):
     print(sys.argv[0], "N pmin pmax maxbits nmeas")
@@ -79,27 +81,49 @@ pub fn rand_p(r: &mut SmallRng) -> u128 {{
 }}
 """
 
-commands = []
+tasks = queue.Queue()
+lock = threading.Lock()
+
+
+def worker():
+    while True:
+        task = tasks.get()
+        if task is None:
+            tasks.task_done()
+            tasks.put(None)
+            return
+        
+        lines = []
+        for char in task[1:]:
+            op = '&' if char == '1' else '|'
+            lines.append(f'    res {op}= rng(r);')
+        with lock:
+            with open('src/generated.rs', 'w') as f:
+                print(code.format(N, task, '\n'.join(lines)), file=f)
+            subprocess.run(['cargo', 'build', '--release'], check=True)
+            os.makedirs(f'bin/{L}', exist_ok=True)
+            os.rename('target/release/ising', f'bin/{L}/{task}')
+        subprocess.run(
+            f'bin/{L}/{task} {nmeas} >> data/{L}/{task}',
+            shell=True,
+            check=True,
+        )
+        os.remove(f'bin/{L}/{task}')
+        tasks.task_done()
+
+
+threads = [
+    threading.Thread(target=worker)
+    for _ in range(8)
+]
+for thread in threads:
+    thread.start()
 
 b.inc()
 while b.p < pmax:
-    print(b)
-    lines = []
-    for bit in reversed(b.bits[:-1]):
-        op = '|&'[bit]
-        lines.append(f'    res {op}= rng(r);')
-    with open('src/generated.rs', 'w') as f:
-        print(code.format(N, b, '\n'.join(lines)), file=f)
-    subprocess.run(['cargo', 'build', '--release'], check=True)
-    os.makedirs(f'bin/{L}', exist_ok=True)
-    os.rename('target/release/ising', f'bin/{L}/{b}')
-    commands.append(f'bin/{L}/{b} {nmeas} >> data/{L}/{b}; echo {b}')
-
+    tasks.put(str(b))
     b.inc()
 
-subprocess.run(
-    ['parallel', 'sh', '-c'],
-    input='\n'.join(commands),
-    text=True,
-    check=True,
-)
+tasks.put(None)
+for thread in threads:
+    thread.join()
