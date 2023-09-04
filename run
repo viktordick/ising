@@ -70,6 +70,7 @@ code = """
 use crate::rnd::{{SmallRng,rng}};
 
 pub const N: usize = {};
+pub const SIG: &str = "{}";
 
 pub fn rand_p(r: &mut SmallRng) -> u128 {{
     let mut res = rng(r);
@@ -88,11 +89,11 @@ while b.p < pmax:
         op = '|&'[bit]
         lines.append(f'    res {op}= rng(r);')
     with open('src/generated.rs', 'w') as f:
-        print(code.format(N, '\n'.join(lines)), file=f)
+        print(code.format(N, b, '\n'.join(lines)), file=f)
     subprocess.run(['cargo', 'build', '--release'], check=True)
     os.makedirs(f'bin/{L}', exist_ok=True)
     os.rename('target/release/ising', f'bin/{L}/{b}')
-    commands.append(f'bin/{L}/{b} {nmeas} > data/{L}/{b}; echo {b}')
+    commands.append(f'bin/{L}/{b} {nmeas} >> data/{L}/{b}; echo {b}')
 
     b.inc()
 

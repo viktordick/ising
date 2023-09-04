@@ -1,14 +1,16 @@
 mod rnd;
 mod generated;
 
-use std::io::{stdout, Write, Error};
+use std::io::{stdout, Write, Error, Read};
 use std::env::args;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::fs::{File, create_dir_all, OpenOptions};
+use std::path::Path;
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
 
-use crate::generated::{rand_p,N};
+use crate::generated::{rand_p,N,SIG};
 
 const L: usize = N*256;
 
@@ -72,14 +74,16 @@ impl HalfLattice {
     }
 
     fn update(&mut self, r: &mut SmallRng, other: &HalfLattice) {
+        let mut shift_right = self.odd;
         for row in 0..L {
             let nb = [
                 other.row[(row+L-1)%L],
-                other.row[row].shift(self.odd),
+                other.row[row].shift(shift_right),
                 other.row[(row+1)%L],
                 other.row[row],
             ];
             self.row[row].update(r, nb);
+            shift_right = !shift_right;
         }
     }
 
@@ -91,6 +95,24 @@ impl HalfLattice {
             }
         }
         result
+    }
+
+    fn store(&self, file: &mut File) {
+        for i in 0..L {
+            for j in 0..N {
+                file.write_all(&self.row[i].c[j].to_ne_bytes()).unwrap();
+            }
+        }
+    }
+
+    fn load(&mut self, file: &mut File) {
+        for i in 0..L {
+            for j in 0..N {
+                let mut target = [0u8; 16];
+                assert!(file.read(&mut target).unwrap() == 16);
+                self.row[i].c[j] = u128::from_ne_bytes(target);
+            }
+        }
     }
 }
 
@@ -120,20 +142,41 @@ impl Ising {
             terminating: terminating,
         })
     }
+
+    fn sweep(&mut self) {
+        for _ in 0..16 {
+            self.even.update(&mut self.rng, &self.odd);
+            self.odd.update(&mut self.rng, &self.even);
+        }
+        let mag = self.even.mag() + self.odd.mag();
+        let mag = (((2*mag) as f32)/((L*L) as f32)-1.0).abs();
+        stdout().write_all(&mag.to_ne_bytes()).unwrap();
+    }
+
     fn run(&mut self, nmeas: usize) {
+        let path = Path::new(".state").join(format!("{}", L));
+        create_dir_all(&path).unwrap();
+        let path = path.join(SIG);
+        if path.exists() {
+            let mut file = File::open(&path).unwrap();
+            self.even.load(&mut file);
+            self.odd.load(&mut file);
+        }
+
         for _ in 0..nmeas {
-            for _ in 0..16 {
-                self.even.update(&mut self.rng, &self.odd);
-                self.odd.update(&mut self.rng, &self.even);
-            }
-            let mag = self.even.mag() + self.odd.mag();
-            let mag = (((2*mag) as f32)/((L*L) as f32)-1.0).abs();
-            stdout().write_all(&mag.to_ne_bytes()).unwrap();
+            self.sweep();
             if self.terminating.load(Ordering::Relaxed) {
                 break;
             }
         }
 
+        let mut file = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(&path).unwrap();
+        self.even.store(&mut file);
+        self.odd.store(&mut file);
     }
 }
 
