@@ -85,31 +85,41 @@ tasks = queue.Queue()
 lock = threading.Lock()
 
 
-def worker():
-    while True:
-        task = tasks.get()
-        if task is None:
-            tasks.task_done()
-            tasks.put(None)
-            return
-        
-        lines = []
-        for char in task[1:]:
-            op = '&' if char == '1' else '|'
-            lines.append(f'    res {op}= rng(r);')
-        with lock:
-            with open('src/generated.rs', 'w') as f:
-                print(code.format(N, task, '\n'.join(lines)), file=f)
-            subprocess.run(['cargo', 'build', '--release'], check=True)
-            os.makedirs(f'bin/{L}', exist_ok=True)
-            os.rename('target/release/ising', f'bin/{L}/{task}')
+def process(task):
+    lines = []
+    for char in task[1:]:
+        op = '&' if char == '1' else '|'
+        lines.append(f'    res {op}= rng(r);')
+    with lock:
+        with open('src/generated.rs', 'w') as f:
+            print(code.format(N, task, '\n'.join(lines)), file=f)
+        subprocess.run(['cargo', 'build', '--release'], check=True)
+        os.makedirs(f'bin/{L}', exist_ok=True)
+        os.rename('target/release/ising', f'bin/{L}/{task}')
+    try:
         subprocess.run(
             f'bin/{L}/{task} {nmeas} >> data/{L}/{task}',
             shell=True,
             check=True,
         )
+    finally:
         os.remove(f'bin/{L}/{task}')
-        tasks.task_done()
+
+
+def worker():
+    while True:
+        try:
+            task = tasks.get()
+            if task is None:
+                tasks.task_done()
+                tasks.put(None)
+                return
+            process(task)
+        except:
+            tasks.put(None)
+            raise
+        finally:
+            tasks.task_done()
 
 
 threads = [
