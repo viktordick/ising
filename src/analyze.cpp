@@ -158,6 +158,18 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    std::cout << std::fixed<<
+        '#' << std::setw(10) << "N" << 
+        ' ' << std::setw(10) << "L" << 
+        ' ' << std::setw(10) << "p" << 
+        ' ' << std::setw(10) << "beta" << 
+        ' ' << std::setw(10) << "M1" << 
+        ' ' << std::setw(10) << "M1err" << 
+        ' ' << std::setw(10) << "M2" << 
+        ' ' << std::setw(10) << "M2err" << 
+        ' ' << std::setw(10) << "Chi" << 
+        ' ' << std::setw(10) << "ChiErr" << std::endl;
+
     for (int i=3; i<argc; i++) {
         std::string filename = argv[i];
 

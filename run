@@ -87,18 +87,19 @@ lock = threading.Lock()
 
 def process(task):
     lines = []
-    for char in task[1:]:
-        op = '&' if char == '1' else '|'
+    for char in task[-2::-1]:
+        op = '|' if char == '1' else '&'
         lines.append(f'    res {op}= rng(r);')
     with lock:
+        print(task)
         with open('src/generated.rs', 'w') as f:
             print(code.format(N, task, '\n'.join(lines)), file=f)
-        subprocess.run(['cargo', 'build', '--release'], check=True)
+        subprocess.run(['cargo', 'build', '--release'], check=True, capture_output=True)
         os.makedirs(f'bin/{L}', exist_ok=True)
         os.rename('target/release/ising', f'bin/{L}/{task}')
     try:
         subprocess.run(
-            f'bin/{L}/{task} {nmeas} >> data/{L}/{task}',
+            f'bin/{L}/{task} {nmeas}',
             shell=True,
             check=True,
         )
@@ -114,8 +115,13 @@ def worker():
                 tasks.task_done()
                 tasks.put(None)
                 return
+        except BaseException:
+            tasks.put(None)
+            return
+
+        try:
             process(task)
-        except:
+        except BaseException:
             tasks.put(None)
             raise
         finally:

@@ -1,7 +1,7 @@
 mod rnd;
 mod generated;
 
-use std::io::{stdout, Write, Error, Read};
+use std::io::{Write, Error, Read};
 use std::env::args;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -121,6 +121,8 @@ struct Ising {
     odd: HalfLattice,
     rng: SmallRng,
     terminating: Arc<AtomicBool>,
+    measured: u64,
+    file: File,
 }
 
 impl Ising {
@@ -135,11 +137,19 @@ impl Ising {
             signal_hook::consts::SIGINT,
             Arc::clone(&terminating)
         );
+        let path = Path::new("data").join(format!("{}", L)).join(SIG);
+        let mut opt = OpenOptions::new();
+        let (measured, opt) = match path.metadata() {
+            Err(_) => (0, opt.write(true).create(true)),
+            Ok(md) => (md.len()/4, opt.append(true)),
+        };
         Ok(Ising {
             even: HalfLattice::new(false),
             odd: HalfLattice::new(true),
             rng: SmallRng::from_entropy(),
             terminating: terminating,
+            measured: measured,
+            file: opt.open(&path).unwrap(),
         })
     }
 
@@ -150,10 +160,10 @@ impl Ising {
         }
         let mag = self.even.mag() + self.odd.mag();
         let mag = (((2*mag) as f32)/((L*L) as f32)-1.0).abs();
-        stdout().write_all(&mag.to_ne_bytes()).unwrap();
+        self.file.write_all(&mag.to_ne_bytes()).unwrap();
     }
 
-    fn run(&mut self, nmeas: usize) {
+    fn run(&mut self, nmeas: u64) {
         let path = Path::new(".state").join(format!("{}", L));
         create_dir_all(&path).unwrap();
         let path = path.join(SIG);
@@ -163,7 +173,7 @@ impl Ising {
             self.odd.load(&mut file);
         }
 
-        for _ in 0..nmeas {
+        for _ in self.measured..nmeas {
             self.sweep();
             if self.terminating.load(Ordering::Relaxed) {
                 break;
@@ -183,7 +193,7 @@ impl Ising {
 fn main() -> Result<(), Error> {
     let mut args = args();
     let _ = args.next();
-    let nmeas: usize = args.next().unwrap().parse().unwrap();
+    let nmeas: u64= args.next().unwrap().parse().unwrap();
     let mut ising = Ising::new()?;
     ising.run(nmeas);
     Ok(())
