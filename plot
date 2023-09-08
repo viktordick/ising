@@ -1,15 +1,32 @@
 #!/usr/bin/python3
 import os
-import time
+import signal
 import subprocess as sp
 import matplotlib.pyplot as plt
 import numpy as np
 
-pmin = 0.16
-pmax = 0.19
+pmin = 0.1
+pmax = 0.2
 
 plt.ion()
 fig, ax = plt.subplots(layout='constrained')
+terminating = False
+
+
+def quit(*args):
+    global terminating
+    terminating = True
+    fig.canvas.stop_event_loop()
+
+
+def update_errorbar(errobj, x, y, yerr):
+    ln, caps, bars = errobj
+    barsy, = bars
+    ln.set_data(x, y)
+    barsy.set_segments([
+        np.array([[x, yt], [x, yb]])
+        for x, yt, yb in zip(x, y + yerr, y - yerr)
+    ])
 
 
 def read_data():
@@ -32,13 +49,26 @@ def read_data():
 
     return {key: np.array(value) for key, value in data.items()}
 
-p = None
-while True:
+
+signal.signal(signal.SIGTERM, quit)
+signal.signal(signal.SIGINT, quit)
+fig.canvas.mpl_connect('close_event', quit)
+
+graphs = {}
+while not terminating:
     data = read_data()
-    ax.clear()
     for key, v in data.items():
-        ax.errorbar(v[:, 2], v[:, 8]*key**(-1.75), yerr=v[:, 9]*key**(-1.75),
-                    fmt='+', label=str(int(key)))
+        x = v[:, 2]
+        y = v[:, 8] * key**(-1.75)
+        yerr = v[:, 9] * key**(-1.75)
+
+        if key not in graphs:
+            graphs[key] = ax.errorbar(x, y, yerr, fmt='+', label=str(int(key)))
+        else:
+            update_errorbar(graphs[key], x, y, yerr)
+
     ax.legend()
-    plt.show()
-    plt.pause(2)
+    fig.canvas.draw()
+    fig.canvas.start_event_loop(2)
+
+fig.canvas.close()

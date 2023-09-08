@@ -15,6 +15,7 @@ import sys
 import signal
 import subprocess as sp
 import asyncio
+import logging
 
 terminating = False
 
@@ -44,7 +45,7 @@ pub fn rand_p(r: &mut SmallRng) -> u128 {{
 }}
 """
 
-for f in ['L', '.state', 'result', 'data']:
+for f in ['.state', 'result', 'data', 'bin']:
     os.makedirs(f'{f}/{L}', exist_ok=True)
 
 procs = []
@@ -80,7 +81,7 @@ async def worker(queue):
             procs.remove(proc)
             os.remove(f'bin/{L}/{sig}')
         except Exception:
-            print("Encountered exception. Terminating")
+            logging.exception("Terminating")
             terminate()
 
 
