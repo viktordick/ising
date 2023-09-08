@@ -9,12 +9,14 @@ number of bits after the decimal point within that interval.
 So, if the parameters '0.0 1.0 2' are given, the numbers 1/4, 1/2 and 3/4 are
 computed, which in binary are 0.01, 0.1 and 0.11. Zero is always excluded.
 '''
-
+from math import ceil
 import os
 import sys
-import subprocess
-import queue
-import threading
+import signal
+import subprocess as sp
+import asyncio
+
+terminating = False
 
 if (len(sys.argv) != 6):
     print(sys.argv[0], "N pmin pmax maxbits nmeas")
@@ -22,52 +24,13 @@ if (len(sys.argv) != 6):
 
 N = int(sys.argv[1])
 L = 256*N
-pmin = max(0, float(sys.argv[2]))
-pmax = min(1, float(sys.argv[3]))
 maxbits = int(sys.argv[4])
+scaling = 2**maxbits
+pmin = max(1, ceil(float(sys.argv[2])*2**maxbits))
+pmax = min(2**maxbits - 1, ceil(float(sys.argv[3])*2**maxbits))
 nmeas = int(sys.argv[5])
 
-
-class bitfield:
-
-    def __init__(self):
-        self.p = 0
-        self.bits = []
-        self.lsb = 1  # value of least significant bit
-
-    def append(self, border):
-        """add another bit such that the value is still below border"""
-        self.lsb /= 2.0
-        if self.p + self.lsb < border:
-            val = 1
-            self.p += self.lsb
-        else:
-            val = 0
-        self.bits = [val] + self.bits
-
-    def inc(self):
-        self.p += 2**(-len(self.bits))
-        for i in range(len(self.bits)):
-            if self.bits[i] == 0:
-                self.bits[i] = 1
-                break
-            else:
-                self.bits[i] = 0
-
-    def __repr__(self):
-        s = ''
-        for i in self.bits:
-            if s == '' and i == 0:
-                continue
-            s = str(i) + s
-        return s
-
-
-b = bitfield()
-inc = 1
-for i in range(maxbits):
-    b.append(pmin)
-
+fmt = '{:0' + str(maxbits) + 'b}'
 code = """
 use crate::rnd::{{SmallRng,rng}};
 
@@ -81,65 +44,77 @@ pub fn rand_p(r: &mut SmallRng) -> u128 {{
 }}
 """
 
-tasks = queue.Queue()
-lock = threading.Lock()
+for f in ['L', '.state', 'result', 'data']:
+    os.makedirs(f'{f}/{L}', exist_ok=True)
+
+procs = []
 
 
-def process(task):
-    lines = []
-    for char in task[-2::-1]:
-        op = '|' if char == '1' else '&'
-        lines.append(f'    res {op}= rng(r);')
-    with lock:
-        print(task)
-        with open('src/generated.rs', 'w') as f:
-            print(code.format(N, task, '\n'.join(lines)), file=f)
-        subprocess.run(['cargo', 'build', '--release'], check=True, capture_output=True)
-        os.makedirs(f'bin/{L}', exist_ok=True)
-        os.rename('target/release/ising', f'bin/{L}/{task}')
-    try:
-        subprocess.run(
-            f'bin/{L}/{task} {nmeas}',
-            shell=True,
-            check=True,
-        )
-    finally:
-        os.remove(f'bin/{L}/{task}')
-
-
-def worker():
+async def worker(queue):
     while True:
-        try:
-            task = tasks.get()
-            if task is None:
-                tasks.task_done()
-                tasks.put(None)
-                return
-        except BaseException:
-            tasks.put(None)
+        p = await queue.get()
+        queue.task_done()
+        if p is None:
             return
-
+        if terminating:
+            continue
         try:
-            process(task)
-        except BaseException:
-            tasks.put(None)
-            raise
-        finally:
-            tasks.task_done()
+            print(p/scaling)
+            sig = fmt.format(p).rstrip('0')
+            lines = []
+            for char in sig[-2::-1]:
+                op = '|' if char == '1' else '&'
+                lines.append(f'    res {op}= rng(r);')
+
+            with open('src/generated.rs', 'w') as f:
+                print(code.format(N, sig, '\n'.join(lines)), file=f)
+            sp.run(['cargo', 'build', '--release'], check=True,
+                   capture_output=True)
+            os.rename('target/release/ising', f'bin/{L}/{sig}')
+            proc = await asyncio.create_subprocess_exec(
+                f'bin/{L}/{sig}',
+                str(nmeas),
+            )
+            procs.append(proc)
+            await proc.wait()
+            procs.remove(proc)
+            os.remove(f'bin/{L}/{sig}')
+        except Exception:
+            print("Encountered exception. Terminating")
+            terminate()
 
 
-threads = [
-    threading.Thread(target=worker)
-    for _ in range(8)
-]
-for thread in threads:
-    thread.start()
+def terminate():
+    global terminating
+    print('terminating')
+    terminating = True
+    loop = asyncio.get_running_loop()
+    for sig in [signal.SIGINT, signal.SIGTERM]:
+        loop.remove_signal_handler(sig)
+    for proc in procs:
+        proc.terminate()
 
-b.inc()
-while b.p < pmax:
-    tasks.put(str(b))
-    b.inc()
 
-tasks.put(None)
-for thread in threads:
-    thread.join()
+async def main():
+    loop = asyncio.get_running_loop()
+    queue = asyncio.Queue()
+    for sig in [signal.SIGINT, signal.SIGTERM]:
+        loop.add_signal_handler(sig, terminate)
+    tasks = []
+    for _ in range(8):
+        tasks.append(asyncio.create_task(worker(queue)))
+
+    for p in range(pmin, pmax+1):
+        if terminating:
+            break
+        await queue.put(p)
+
+    for task in tasks:
+        await queue.put(None)
+
+    await queue.join()
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+asyncio.run(main())
