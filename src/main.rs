@@ -12,6 +12,7 @@ use rand::rngs::SmallRng;
 
 use crate::generated::{rand_p,N,SIG};
 
+const LH: usize = 128*N;
 const L: usize = N*256;
 
 #[derive(Clone, Copy)]
@@ -62,43 +63,47 @@ impl Line {
     }
 }
 
-struct HalfLattice {
-    odd: bool,
-    row: [Line; L],
+// Quarter lattice. Each quarter describes the sublattice that is obtained by starting at one of
+// the points 00, 01, 10 or 11 and including all points that are reached from here by multiples of
+// 2 in each direction.
+struct SubLat {
+    row: [Line; LH],
 }
 
-impl HalfLattice {
-    fn new(odd: bool) -> Self {
+impl SubLat {
+    fn new() -> Self {
         let line = Line::new();
-        Self {odd: odd, row: [line; L]}
+        Self {row: [line; LH]}
     }
 
-    fn update(&mut self, r: &mut SmallRng, other: &HalfLattice) {
-        let mut shift_right = self.odd;
-        for row in 0..L {
+    // Update this sublattice. Gets a reference to two other sublattices, which are of a different
+    // parity, one describing a left/right neighbor and one an up/down neighbor.
+    fn update(&mut self, r: &mut SmallRng,
+              lr: &Self, is_left: bool,
+              ud: &Self, is_up: bool) {
+        let offset = if is_up { 1 } else { LH-1 };
+        for i in 0..LH {
             let nb = [
-                other.row[(row+L-1)%L],
-                other.row[row].shift(shift_right),
-                other.row[(row+1)%L],
-                other.row[row],
+                lr.row[i],
+                ud.row[i],
+                lr.row[i].shift(is_left),
+                ud.row[(i+offset)%LH],
             ];
-            self.row[row].update(r, nb);
-            shift_right = !shift_right;
+            self.row[i].update(r, nb);
         }
     }
 
     fn mag(&self) -> u32 {
         let mut result = 0;
-        for i in 0..L {
+        for i in 0..LH {
             for j in 0..N {
-                result += self.row[i].c[j].count_ones()
+                result += self.row[i].c[j].count_ones();
             }
         }
         result
     }
-
     fn store(&self, file: &mut File) {
-        for i in 0..L {
+        for i in 0..LH {
             for j in 0..N {
                 file.write_all(&self.row[i].c[j].to_ne_bytes()).unwrap();
             }
@@ -106,7 +111,7 @@ impl HalfLattice {
     }
 
     fn load(&mut self, file: &mut File) {
-        for i in 0..L {
+        for i in 0..LH {
             for j in 0..N {
                 let mut target = [0u8; 16];
                 assert!(file.read(&mut target).unwrap() == 16);
@@ -117,8 +122,10 @@ impl HalfLattice {
 }
 
 struct Ising {
-    even: HalfLattice,
-    odd: HalfLattice,
+    s00: SubLat,
+    s01: SubLat,
+    s10: SubLat,
+    s11: SubLat,
     rng: SmallRng,
     terminating: Arc<AtomicBool>,
     measured: u64,
@@ -144,8 +151,10 @@ impl Ising {
             Ok(md) => (md.len()/4, opt.append(true)),
         };
         Ok(Ising {
-            even: HalfLattice::new(false),
-            odd: HalfLattice::new(true),
+            s00: SubLat::new(),
+            s01: SubLat::new(),
+            s10: SubLat::new(),
+            s11: SubLat::new(),
             rng: SmallRng::from_entropy(),
             terminating: terminating,
             measured: measured,
@@ -155,10 +164,13 @@ impl Ising {
 
     fn sweep(&mut self) {
         for _ in 0..16 {
-            self.even.update(&mut self.rng, &self.odd);
-            self.odd.update(&mut self.rng, &self.even);
+            self.s00.update(&mut self.rng, &self.s01, false, &self.s10, false);
+            self.s11.update(&mut self.rng, &self.s10, true, &self.s01, true);
+            self.s01.update(&mut self.rng, &self.s00, true, &self.s11, false);
+            self.s10.update(&mut self.rng, &self.s11, false, &self.s00, true);
         }
-        let mag = self.even.mag() + self.odd.mag();
+        //let mag = self.even.mag() + self.odd.mag();
+        let mag = self.s00.mag() + self.s01.mag() + self.s10.mag() + self.s11.mag();
         let mag = (((2*mag) as f32)/((L*L) as f32)-1.0).abs();
         self.file.write_all(&mag.to_ne_bytes()).unwrap();
     }
@@ -169,8 +181,10 @@ impl Ising {
         let path = path.join(SIG);
         if path.exists() {
             let mut file = File::open(&path).unwrap();
-            self.even.load(&mut file);
-            self.odd.load(&mut file);
+            self.s00.load(&mut file);
+            self.s01.load(&mut file);
+            self.s10.load(&mut file);
+            self.s11.load(&mut file);
         }
 
         for _ in self.measured..nmeas {
@@ -185,8 +199,10 @@ impl Ising {
             .truncate(true)
             .create(true)
             .open(&path).unwrap();
-        self.even.store(&mut file);
-        self.odd.store(&mut file);
+        self.s00.store(&mut file);
+        self.s01.store(&mut file);
+        self.s10.store(&mut file);
+        self.s11.store(&mut file);
     }
 }
 
