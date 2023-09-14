@@ -43,22 +43,26 @@ impl Line {
     /// Update line according to randomness and neighboring lines
     fn update(&mut self, r: &mut SmallRng, nb: [Line; 4]) {
         for i in 0..N {
-            // Count how many neighbors are antiparallel
+            // n is 1 where nb is parallel to self.c
             let mut n = [0u128; 4];
             for j in 0..4 {
-                n[j] = self.c[i] ^ nb[j].c[i];
+                n[j] = !(self.c[i] ^ nb[j].c[i]);
             }
-            let mut c0 = !(n[0]|n[1]|n[2]|n[3]);
-            let mut c1 = n[0] & !n[1] & !n[2] & !n[3] |
-                    !n[0] &  n[1] & !n[2] & !n[3] |
-                    !n[0] & !n[1] &  n[2] & !n[3] |
-                    !n[0] & !n[1] & !n[2] &  n[3];
-            let c234 = !c0 & !c1;
-            // Keep bits in c0 with probability exp(-8beta) and c1 with exp(-4beta)
-            c0 &= rand_p(r) & rand_p(r);
-            c1 &= rand_p(r);
-            // Flip each bit if it is in one of the masks
-            self.c[i] ^= c0|c1|c234;
+
+            // All parallel -> flip with prob. exp(-8beta)
+            let all = n[0]&n[1]&n[2]&n[3];
+
+            // three parallel -> flip with prob. exp(-4beta)
+            let three =
+                !n[0] & n[1] & n[2] & n[3] |
+                 n[0] &!n[1] & n[2] & n[3] |
+                 n[0] & n[1] &!n[2] & n[3] |
+                 n[0] & n[1] & n[2] &!n[3];
+
+            // less -> always flip
+            let less = !all & !three;
+
+            self.c[i] ^= all & rand_p(r) & rand_p(r) | three & rand_p(r) | less;
         }
     }
 }
@@ -85,8 +89,8 @@ impl SubLat {
         for i in 0..LH {
             let nb = [
                 lr.row[i],
-                ud.row[i],
                 lr.row[i].shift(is_left),
+                ud.row[i],
                 ud.row[(i+offset)%LH],
             ];
             self.row[i].update(r, nb);
@@ -169,7 +173,6 @@ impl Ising {
             self.s01.update(&mut self.rng, &self.s00, true, &self.s11, false);
             self.s10.update(&mut self.rng, &self.s11, false, &self.s00, true);
         }
-        //let mag = self.even.mag() + self.odd.mag();
         let mag = self.s00.mag() + self.s01.mag() + self.s10.mag() + self.s11.mag();
         let mag = (((2*mag) as f32)/((L*L) as f32)-1.0).abs();
         self.file.write_all(&mag.to_ne_bytes()).unwrap();

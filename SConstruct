@@ -36,7 +36,7 @@ if os.path.exists('data'):
             nc.Command(
                 'result'+datafile[4:], 
                 [datafile, 'bin/analyze'], 
-                'bin/analyze 1000 0.1 $SOURCE > $TARGET',
+                'bin/analyze 100 0.1 $SOURCE > $TARGET',
             )
         )
 
