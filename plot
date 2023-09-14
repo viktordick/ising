@@ -5,8 +5,8 @@ import subprocess as sp
 import matplotlib.pyplot as plt
 import numpy as np
 
-pmin = 0.1
-pmax = 0.2
+pmin = 0.16
+pmax = 0.19
 
 plt.ion()
 fig, ax = plt.subplots(layout='constrained')
@@ -70,5 +70,3 @@ while not terminating:
     ax.legend()
     fig.canvas.draw()
     fig.canvas.start_event_loop(2)
-
-fig.canvas.close()

@@ -28,7 +28,7 @@ L = 256*N
 maxbits = int(sys.argv[4])
 scaling = 2**maxbits
 pmin = max(1, ceil(float(sys.argv[2])*2**maxbits))
-pmax = min(2**maxbits - 1, ceil(float(sys.argv[3])*2**maxbits))
+pmax = min(2**maxbits - 1, int(float(sys.argv[3])*2**maxbits))
 nmeas = int(sys.argv[5])
 
 fmt = '{:0' + str(maxbits) + 'b}'
@@ -60,8 +60,9 @@ async def worker(queue):
         if terminating:
             continue
         try:
-            print(p/scaling)
-            sig = fmt.format(p).rstrip('0')
+            sig = fmt.format(p)
+            print(sig, p/scaling)
+            sig = sig.rstrip('0')
             lines = []
             for char in sig[-2::-1]:
                 op = '|' if char == '1' else '&'
