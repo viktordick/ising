@@ -30,7 +30,7 @@ def update_errorbar(errobj, x, y, yerr):
 
 
 def read_data():
-    sp.run(['scons'], check=True)
+    sp.run(['scons', '-s'], check=True)
     data = {}
     for root, dirs, files in os.walk('result'):
         for fname in sorted(files):
