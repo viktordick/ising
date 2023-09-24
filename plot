@@ -39,8 +39,8 @@ def read_data():
                     if line.startswith('#'):
                         continue
                     v = [float(word) for word in line.split()]
-                    L = v[1]
-                    p = v[2]
+                    L = v[0]
+                    p = v[1]
                     if p < pmin or p > pmax:
                         continue
                     if L not in data:
@@ -58,9 +58,9 @@ graphs = {}
 while not terminating:
     data = read_data()
     for key, v in data.items():
-        x = v[:, 2]
-        y = v[:, 8] * key**(-1.75)
-        yerr = v[:, 9] * key**(-1.75)
+        x = v[:, 1]
+        y = v[:, 3] * key**(-1.75)
+        yerr = v[:, 4] * key**(-1.75)
 
         if key not in graphs:
             graphs[key] = ax.errorbar(x, y, yerr, fmt='+', label=str(int(key)))
