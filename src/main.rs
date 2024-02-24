@@ -118,7 +118,9 @@ impl SubLat {
         for i in 0..LH {
             for j in 0..N {
                 let mut target = [0u8; 16];
-                assert!(file.read(&mut target).unwrap() == 16);
+                if file.read(&mut target).unwrap() != 16 {
+                    break
+                };
                 self.row[i].c[j] = u128::from_ne_bytes(target);
             }
         }
