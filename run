@@ -13,11 +13,8 @@ from math import ceil
 import os
 import sys
 import signal
-import subprocess as sp
 import asyncio
-import logging
 
-terminating = False
 
 if (len(sys.argv) != 6):
     print(sys.argv[0], "N pmin pmax maxbits nmeas")
@@ -48,75 +45,57 @@ pub fn rand_p(r: &mut SmallRng) -> u128 {{
 for f in ['.state', 'result', 'data', 'bin']:
     os.makedirs(f'{f}/{L}', exist_ok=True)
 
+sem_build = asyncio.Semaphore()
+sem_run = asyncio.Semaphore(8)
+tasks = []
 procs = []
 
 
-async def worker(queue):
-    while True:
-        p = await queue.get()
-        queue.task_done()
-        if p is None:
-            return
-        if terminating:
-            continue
-        try:
-            sig = fmt.format(p)
-            print(sig, p/scaling)
-            sig = sig.rstrip('0')
-            lines = []
-            for char in sig[-2::-1]:
-                op = '|' if char == '1' else '&'
-                lines.append(f'    res {op}= rng(r);')
-
-            with open('src/generated.rs', 'w') as f:
-                print(code.format(N, sig, '\n'.join(lines)), file=f)
-            sp.run(['cargo', 'build', '--release'], check=True,
-                   capture_output=True)
-            os.rename('target/release/ising', f'bin/{L}/{sig}')
-            proc = await asyncio.create_subprocess_exec(
-                f'bin/{L}/{sig}',
-                str(nmeas),
-            )
-            procs.append(proc)
-            await proc.wait()
-            procs.remove(proc)
-            os.remove(f'bin/{L}/{sig}')
-        except Exception:
-            logging.exception("Terminating")
-            terminate()
-
-
 def terminate():
-    global terminating
-    print('terminating')
-    terminating = True
-    loop = asyncio.get_running_loop()
-    for sig in [signal.SIGINT, signal.SIGTERM]:
-        loop.remove_signal_handler(sig)
+    print("Terminating")
+    for task in tasks:
+        task.cancel()
     for proc in procs:
         proc.terminate()
 
 
+async def run(p):
+    full_sig = fmt.format(p)
+    sig = full_sig.rstrip('0')
+    lines = []
+    for char in sig[-2::-1]:
+        op = '|' if char == '1' else '&'
+        lines.append(f'    res {op}= rng(r);')
+
+    async with sem_build:
+        print(full_sig, p/scaling)
+        with open('src/generated.rs', 'w') as f:
+            print(code.format(N, sig, '\n'.join(lines)), file=f)
+        proc = await asyncio.create_subprocess_exec(
+            'cargo', 'build', '--release',
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        await proc.wait()
+        os.rename('target/release/ising', f'bin/{L}/{sig}')
+    async with sem_run:
+        proc = await asyncio.create_subprocess_exec(
+            f'bin/{L}/{sig}',
+            str(nmeas),
+        )
+        procs.append(proc)
+        await proc.wait()
+        procs.remove(proc)
+    os.remove(f'bin/{L}/{sig}')
+
+
 async def main():
     loop = asyncio.get_running_loop()
-    queue = asyncio.Queue()
     for sig in [signal.SIGINT, signal.SIGTERM]:
         loop.add_signal_handler(sig, terminate)
-    tasks = []
-    for _ in range(8):
-        tasks.append(asyncio.create_task(worker(queue)))
-
     for p in range(pmin, pmax+1):
-        if terminating:
-            break
-        await queue.put(p)
-
-    for task in tasks:
-        await queue.put(None)
-
-    await queue.join()
-    for task in tasks:
-        task.cancel()
+        tasks.append(asyncio.create_task(run(p)))
     await asyncio.gather(*tasks, return_exceptions=True)
+
 
 asyncio.run(main())
