@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os
+import sys
 import signal
 import subprocess as sp
 import matplotlib.pyplot as plt
@@ -32,14 +33,15 @@ def update_errorbar(errobj, x, y, yerr):
 def read_data():
     sp.run(['scons', '-s'], check=True)
     data = {}
-    for root, dirs, files in os.walk('result'):
-        for fname in sorted(files):
-            with open(f'{root}/{fname}') as f:
+    for L in sys.argv[1:]:
+        L = int(L)
+        path = f'result/{L}'
+        for fname in sorted(os.listdir(path)):
+            with open(f'{path}/{fname}') as f:
                 for line in f:
-                    if line.startswith('#'):
+                    if not line.strip() or line.startswith('#'):
                         continue
                     v = [float(word) for word in line.split()]
-                    L = v[0]
                     p = v[1]
                     if p < pmin or p > pmax:
                         continue
@@ -57,15 +59,15 @@ fig.canvas.mpl_connect('close_event', quit)
 graphs = {}
 while not terminating:
     data = read_data()
-    for key, v in data.items():
+    for L, v in data.items():
         x = v[:, 1]
-        y = v[:, 3] * key**(-1.75)
-        yerr = v[:, 4] * key**(-1.75)
+        y = v[:, 3] * L**(-1.75)
+        yerr = v[:, 4] * L**(-1.75)
 
-        if key not in graphs:
-            graphs[key] = ax.errorbar(x, y, yerr, fmt='+', label=str(int(key)))
+        if L not in graphs:
+            graphs[L] = ax.errorbar(x, y, yerr, fmt='+', label=str(int(L)))
         else:
-            update_errorbar(graphs[key], x, y, yerr)
+            update_errorbar(graphs[L], x, y, yerr)
 
     ax.legend()
     fig.canvas.draw()
