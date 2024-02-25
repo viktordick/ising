@@ -2,7 +2,7 @@ data
 target
 Cargo.lock
 src/generated.rs
-bin
+/bin
 *.o
 *.sconsign.dblite
 .state
