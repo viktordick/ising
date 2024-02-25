@@ -12,6 +12,7 @@ computed, which in binary are 0.01, 0.1 and 0.11. Zero is always excluded.
 from math import ceil
 import os
 import sys
+import shutil
 import signal
 import asyncio
 
@@ -42,9 +43,6 @@ pub fn rand_p(r: &mut SmallRng) -> u128 {{
 }}
 """
 
-for f in ['.state', 'result', 'data', 'bin']:
-    os.makedirs(f'{f}/{L}', exist_ok=True)
-
 sem_build = asyncio.Semaphore()
 sem_run = asyncio.Semaphore(8)
 tasks = []
@@ -62,23 +60,24 @@ def terminate():
 async def run(p):
     full_sig = fmt.format(p)
     sig = full_sig.rstrip('0')
-    lines = []
-    for char in sig[-2::-1]:
-        op = '|' if char == '1' else '&'
-        lines.append(f'    res {op}= rng(r);')
+    if not os.path.exists(f'bin/{L}/{sig}'):
+        lines = []
+        for char in sig[-2::-1]:
+            op = '|' if char == '1' else '&'
+            lines.append(f'    res {op}= rng(r);')
 
-    async with sem_build:
-        print(full_sig, p/scaling)
-        with open('src/generated.rs', 'w') as f:
-            print(code.format(N, sig, '\n'.join(lines)), file=f)
-        proc = await asyncio.create_subprocess_exec(
-            'cargo', 'build', '--release',
-            stdout=asyncio.subprocess.DEVNULL,
-            stderr=asyncio.subprocess.DEVNULL,
-        )
-        await proc.wait()
-        os.rename('target/release/ising', f'bin/{L}/{sig}')
+        async with sem_build:
+            with open('src/generated.rs', 'w') as f:
+                print(code.format(N, sig, '\n'.join(lines)), file=f)
+            proc = await asyncio.create_subprocess_exec(
+                'cargo', 'build', '--release',
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+            await proc.wait()
+            os.rename('target/release/ising', f'bin/{L}/{sig}')
     async with sem_run:
+        print(full_sig, p/scaling)
         proc = await asyncio.create_subprocess_exec(
             f'bin/{L}/{sig}',
             str(nmeas),
@@ -86,13 +85,28 @@ async def run(p):
         procs.append(proc)
         await proc.wait()
         procs.remove(proc)
-    os.remove(f'bin/{L}/{sig}')
 
 
 async def main():
     loop = asyncio.get_running_loop()
     for sig in [signal.SIGINT, signal.SIGTERM]:
         loop.add_signal_handler(sig, terminate)
+    clear = True
+    if os.path.exists('bin/md5'):
+        proc = await asyncio.create_subprocess_exec(
+            'md5sum', '-c', 'bin/md5'
+        )
+        clear = await proc.wait() != 0
+    if clear:
+        shutil.rmtree('bin')
+
+    for f in ['.state', 'result', 'data', 'bin']:
+        os.makedirs(f'{f}/{L}', exist_ok=True)
+    proc = await asyncio.create_subprocess_shell(
+        'md5sum Cargo.toml src/main.rs src/rnd.rs > bin/md5'
+    )
+    await proc.wait()
+
     for p in range(pmin, pmax+1):
         tasks.append(asyncio.create_task(run(p)))
     await asyncio.gather(*tasks, return_exceptions=True)
